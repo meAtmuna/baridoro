@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Book, ChartNoAxesColumn, Home, Settings, User, type LucideIcon } from "lucide-react"
+import { Book, ChartNoAxesColumn, Home, type LucideIcon } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -11,8 +11,8 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
 } from "@/components/ui/sidebar"
+import { Link } from "@tanstack/react-router"
 
-// TypeScript interface for navigation items
 interface NavItem {
   title: string
   url: string
@@ -22,7 +22,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { title: "Home", url: "/", icon: Home },
   { title: "Notes", url: "/notes", icon: Book },
-  { title: "Statistics", url: "statistics", icon: ChartNoAxesColumn },
+  { title: "Statistics", url: "/statistics", icon: ChartNoAxesColumn },
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -38,7 +38,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             {navItems.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton render={<a href={item.url} />}>
+                <SidebarMenuButton
+                  render={
+                    <Link
+                      to={item.url}
+                      activeProps={{
+                        className: "bg-main text-main-foreground font-bold border-2 border-border",
+                      }}
+                      activeOptions={{ exact: item.url === "/" }}
+                    />
+                  }
+                >
                   <item.icon className="mr-2 size-4" />
                   <span>{item.title}</span>
                 </SidebarMenuButton>
