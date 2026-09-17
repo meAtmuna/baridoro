@@ -4,53 +4,165 @@ import { useState } from 'react'
 import { Check, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
+import { useForm } from '@tanstack/react-form'
+import { z } from 'zod'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Textarea } from '@/components/ui/textarea'
 
 export const Route = createFileRoute('/task-management')({
   component: RouteComponent,
 })
 
+const projectSchema = z.object({
+  projectName: z.string().trim().min(1, 'Project name is required'),
+})
+
+const taskSchema = z.object({
+  taskName: z.string().trim().min(1, 'Task name is required'),
+  description: z.string().trim(),
+})
+
+function TaskForm({
+  onCreate,
+  onCancel,
+} : {
+  onCreate: (task: {name: string; description: string}) => void
+  onCancel: () => void
+}) {
+  const taskForm = useForm({
+    defaultValues: {
+      taskName: '',
+      description: '',
+    },
+    validators: {
+      onSubmit: taskSchema,
+    },
+    onSubmit: ({value}) => {
+      onCreate({
+        name: value.taskName.trim(),
+        description: value.description.trim(),
+      })
+
+      taskForm.reset()
+    },
+  })
+  
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        taskForm.handleSubmit()
+        }}
+      className='mt-4 space-y-2 w-80'
+    >
+      <taskForm.Field
+        name='taskName'
+        children={(field) => {
+          const isInvalid = field.state.meta.isTouched && field.state.meta.errors.length > 0
+          
+          return (
+            <Field data-invalid={isInvalid}>
+              <FieldLabel htmlFor={field.name}>
+                Task Name
+              </FieldLabel>
+              <Input
+                id={field.name}
+                name={field.name}
+                onBlur={field.handleBlur}
+                aria-invalid={isInvalid}
+                placeholder='Task name'
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+              />
+              {isInvalid && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
+            </Field>
+          )
+        }}
+      />
+
+      <taskForm.Field
+        name='description'
+        children={(field) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>
+              Description
+            </FieldLabel>
+            <Textarea
+              id={field.name}
+              name={field.name}
+              onBlur={field.handleBlur}
+              placeholder='Description'
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          </Field>
+        )}
+      />
+
+      <div className='flex items-center gap-2 justify-end'>
+        <Button
+          size='icon'
+          variant='neutral'
+          type='button'
+          onClick={onCancel}
+        >
+          <X />
+        </Button>
+
+        <taskForm.Field
+          name='taskName'
+          children={(field) => 
+            field.state.value.trim() && (
+              <Button
+                size='icon'
+                type='submit'
+              >
+                <Check />
+              </Button>
+            )
+          }
+        />
+      </div>
+    </form>
+  )
+}
+
 function RouteComponent() {
   const [showInput, setShowInput] = useState(false)
-  const [projectName, setProjectName] = useState("")
   const [projects, setProjects] = useState<{ name: string; tasks: { name: string; description: string }[] }[]>([])
   const [showTaskInput, setShowTaskInput] = useState<number | null>(null)
-  const [taskName, setTaskName] = useState("")
-  const [taskDescription, setTaskDescription] = useState("")
-
-  const createProject = () => {
-    if (!projectName.trim()) return
-    
-    setProjects([...projects, { name: projectName.trim(), tasks: [] }])
-    setProjectName("")
-    setShowInput(false)
-  }
 
   const cancelCreate = () => {
-    setProjectName("")
     setShowInput(false)
-  }
-
-  const createTask = (projectIndex: number) => {
-    if (!taskName.trim()) return 
-    
-    const updatedProjects = [...projects]
-
-    updatedProjects[projectIndex].tasks.push({
-      name: taskName.trim(),
-      description: taskDescription.trim(),
-    })
-
-    setProjects(updatedProjects)
-    setTaskName("")
-    setTaskDescription("")
-    setShowTaskInput(null)
   }
 
   const cancelTask = () => {
-    setTaskName("")
-    setTaskDescription("")
     setShowTaskInput(null)
   }
+  
+  const projectForm = useForm({
+    defaultValues: {
+      projectName: '',
+    },
+    validators: {
+      onSubmit: projectSchema,
+    },
+    onSubmit: ({value}) => {
+      setProjects([
+        ...projects,
+        {
+          name: value.projectName.trim(),
+          tasks: [],
+        },
+      ])
+
+      projectForm.reset()
+      setShowInput(false)
+    },
+  })
 
   return (
     <div className='p-2'>
@@ -63,30 +175,46 @@ function RouteComponent() {
           Create New Project
         </Button>
       ) : (
-        <div className='flex items-center gap-2'>
-          <Input 
-            placeholder="Enter project name"
-            value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
-            className='max-w-sm'
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            projectForm.handleSubmit()
+          }}
+          className='flex items-center gap-2'
+        >
+          <projectForm.Field
+            name='projectName'
+            children={(field) => (
+              <>
+                <Input 
+                  placeholder="Enter project name"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  className='max-w-sm'
+                />
+
+                <Button
+                  type='button'
+                  size="icon"
+                  variant='neutral'
+                  onClick={cancelCreate}
+                >
+                    <X />
+                </Button>
+
+                {field.state.value.trim() && (
+                  <Button
+                    type='submit'
+                    size="icon"
+                  >
+                      <Check />
+                  </Button>
+                )}
+              </>  
+            )}
           />
-
-          <Button
-            size="icon"
-            variant='neutral'
-            onClick={cancelCreate}
-          >
-              <X />
-          </Button>
-
-          <Button
-            size="icon"
-            onClick={createProject}
-            disabled={!projectName.trim()}
-          >
-              <Check />
-          </Button>
-        </div>
+        </form>
       )}
 
       <div className='mt-6 space-y-4'>
@@ -121,35 +249,16 @@ function RouteComponent() {
                 + Add New Task
               </button>
             ) : (
-              <div className='mt-4 space-y-2 w-80'>
-                <Input
-                  placeholder='Task name'
-                  value={taskName}
-                  onChange={(e) => setTaskName(e.target.value)}
-                />
-                <Input
-                  placeholder='Description'
-                  value={taskDescription}
-                  onChange={(e) => setTaskDescription(e.target.value)}
-                />
+              <TaskForm
+                onCreate={(task) => {
+                  const updatedProjects = [...projects]
+                  updatedProjects[index].tasks.push(task)
 
-                <div className='flex items-center gap-2 justify-end'>
-                  <Button
-                    size='icon'
-                    variant='neutral'
-                    onClick={cancelTask}
-                  >
-                    <X />
-                  </Button>
-                  <Button
-                    size='icon'
-                    onClick={()=> createTask(index)}
-                    disabled={!taskName.trim()}
-                  >
-                    <Check />
-                  </Button>
-                </div>
-              </div>
+                  setProjects(updatedProjects)
+                  setShowTaskInput(null)
+                }}
+                onCancel={cancelTask}
+              />
             )}
           </div>
         ))}
