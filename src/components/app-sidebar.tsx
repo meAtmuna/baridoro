@@ -10,6 +10,7 @@ import {
   SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarTrigger
 } from "@/components/ui/sidebar"
 import { Link } from "@tanstack/react-router"
 
@@ -27,9 +28,10 @@ const navItems: NavItem[] = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar className="border-r-2 border-border" {...props}>
-      <SidebarHeader className="border-b-2 border-border p-4 h-16">
-        <h2 className="font-heading text-lg font-bold">My App</h2>
+    <Sidebar className="border-r-2 border-border" {...props} collapsible="icon">
+      <SidebarHeader className="border-b-2 border-border p-2 h-16 flex flex-row items-center justify-between">
+        <h2 className="font-heading text-lg align-middle group-data-[collapsible=icon]:hidden">My App</h2>
+        <SidebarTrigger className="border-2 border-border shadow-sm bg-white hover:bg-main gap-2" />
       </SidebarHeader>
 
       <SidebarContent>
