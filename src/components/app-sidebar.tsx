@@ -31,7 +31,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar className="border-r-2 border-border" {...props} collapsible="icon">
       <SidebarHeader className="border-b-2 border-border p-2 h-16 flex flex-row items-center justify-between">
         <h2 className="font-heading text-lg align-middle group-data-[collapsible=icon]:hidden">My App</h2>
-        <SidebarTrigger className="border-2 border-border shadow-sm bg-white hover:bg-main gap-2" />
+        <SidebarTrigger className="border-2 border-border shadow-sm bg-white hover:bg-main gap-2 hover:cursor-pointer" />
       </SidebarHeader>
 
       <SidebarContent>
@@ -61,7 +61,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter className="border-t-2 border-border p-4">
-        <p className="font-base text-xs">© 2026 Neobrutalism</p>
+        <p className="font-base text-xs">©</p>
       </SidebarFooter>
     </Sidebar>
   )
