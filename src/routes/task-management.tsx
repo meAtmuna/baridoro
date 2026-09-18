@@ -9,6 +9,9 @@ import { z } from 'zod'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { useTaskStore } from '@/store/task-store'
+import { DragDropProvider} from '@dnd-kit/react'
+import { useSortable } from '@dnd-kit/react/sortable'
 
 export const Route = createFileRoute('/task-management')({
   component: RouteComponent,
@@ -131,10 +134,133 @@ function TaskForm({
   )
 }
 
+function ProjectCard({
+  project,
+  index,
+  showTaskInput,
+  setShowTaskInput,
+  cancelTask,
+  addTask,
+}: {
+  project: {
+    id: string
+    name: string
+    color: string
+    tasks: {
+      id: string
+      name: string
+      description: string
+    }[]
+  }
+
+  index: number
+  showTaskInput: number | null
+  setShowTaskInput: (index: number | null) => void
+  cancelTask: () => void
+  addTask: (
+    projectId: string,
+    task: {
+      name: string
+      description: string
+    },
+  ) => void
+}) {
+  const { ref } = useSortable({
+    id: project.id,
+    index,
+    type: 'project',
+  })
+
+  return (
+    <div
+      ref={ref}
+      className='w-auto shrink-0'
+    >
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-3'>
+          <span 
+            className='h-3 w-3 rounded-full'
+            style={{backgroundColor: project.color}}
+          />
+          <h1 className='font-bold text-xl'>
+            {project.name}
+          </h1>
+          <span className='rounded-full bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400'>
+            {project.tasks.length}
+          </span>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant='ghost'
+              size='icon'
+            >
+              <MoreVertical className='h-4 w-4'/>
+            </Button>
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align='end' sideOffset={8} className='w-52 p-2'>
+            <DropdownMenuItem>
+              <Palette />
+              Edit project color
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Pencil />
+              Edit project name
+            </DropdownMenuItem>
+            <DropdownMenuItem className='text-red-500 focus:text-red-500'>
+              <Trash2 />
+              Delete project
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className='mt-4 space-y-3'>
+        {project.tasks.map((task) => (
+          <Card key={task.id} className='w-80'>
+              <CardContent className='p-4'>
+                <p className='font-bold text-lg'>
+                  {task.name}
+                </p>
+
+                {task.description && (
+                  <p className='text-sm mt-1'>
+                    {task.description}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+        ))}
+
+        {showTaskInput !== index ? (
+          <button
+          className='mt-4'
+          onClick={() => setShowTaskInput(index)}
+          >
+            + Add New Task
+          </button>
+        ) : (
+          <TaskForm
+            onCreate={(task) => {
+              // const updatedProjects = [...projects]
+              // updatedProjects[index].tasks.push(task)
+
+              // setProjects(updatedProjects)
+              addTask(project.id, task)
+              setShowTaskInput(null)
+            }}
+            onCancel={cancelTask}
+          />
+        )}
+      </div>
+    </div>
+  )
+}
 function RouteComponent() {
   const [showInput, setShowInput] = useState(false)
-  const [projects, setProjects] = useState<{ name: string; tasks: { name: string; description: string }[] }[]>([])
+  // const [projects, setProjects] = useState<{ name: string; tasks: { name: string; description: string }[] }[]>([])
   const [showTaskInput, setShowTaskInput] = useState<number | null>(null)
+  const { projects, addProject, addTask, reorderProjects, } = useTaskStore()
 
   const cancelCreate = () => {
     setShowInput(false)
@@ -152,20 +278,30 @@ function RouteComponent() {
       onSubmit: projectSchema,
     },
     onSubmit: ({value}) => {
-      setProjects([
-        ...projects,
-        {
-          name: value.projectName.trim(),
-          tasks: [],
-        },
-      ])
-
+      // setProjects([
+      //   ...projects,
+      //   {
+      //     name: value.projectName.trim(),
+      //     tasks: [],
+      //   },
+      // ])
+      addProject(value.projectName.trim())
       projectForm.reset()
       setShowInput(false)
     },
   })
 
   return (
+    <DragDropProvider
+      onDragEnd={(event) => {
+        if (event.canceled) return
+
+        const {source} = event.operation
+        if (source?.type === 'project') {
+          reorderProjects(event)
+        }
+      }}
+    >
     <div className='min-h-screen overflow-auto p-2'>
       <h1 className='text-4xl font-bold mb-6'>
         Task Management
@@ -173,81 +309,17 @@ function RouteComponent() {
 
       <div className='mt-6 flex w-max items-start gap-6'>
         {projects.map((project, index) => (
-          <div key={index} className='w-auto shrink-0'>
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center gap-3'>
-                <span className='h-3 w-3 rounded-full bg-red-500'/>
-                <h1 className='font-bold text-xl'>
-                  {project.name}
-                </h1>
-                <span className='rounded-full bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400'>
-                  {project.tasks.length}
-                </span>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                  >
-                    <MoreVertical className='h-4 w-4'/>
-                  </Button>
-                </DropdownMenuTrigger>
-
-                <DropdownMenuContent align='end' sideOffset={8} className='w-52 p-2'>
-                  <DropdownMenuItem>
-                    <Palette />
-                    Edit project color
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Pencil />
-                    Edit project name
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className='text-red-500 focus:text-red-500'>
-                    <Trash2 />
-                    Delete project
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className='mt-4 space-y-3'>
-              {project.tasks.map((task, taskIndex) => (
-                <Card key={taskIndex} className='w-80'>
-                    <CardContent className='p-4'>
-                      <p className='font-bold text-lg'>
-                        {task.name}
-                      </p>
-
-                      {task.description && (
-                        <p className='text-sm mt-1'>
-                          {task.description}
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-              ))}
-
-              {showTaskInput !== index ? (
-                <button
-                className='mt-4'
-                onClick={() => setShowTaskInput(index)}
-                >
-                  + Add New Task
-                </button>
-              ) : (
-                <TaskForm
-                  onCreate={(task) => {
-                    const updatedProjects = [...projects]
-                    updatedProjects[index].tasks.push(task)
-
-                    setProjects(updatedProjects)
-                    setShowTaskInput(null)
-                  }}
-                  onCancel={cancelTask}
-                />
-              )}
-            </div>
-          </div>
+          <ProjectCard
+            key={project.id}
+            project={project}
+            index={index}
+            showTaskInput={showTaskInput}
+            setShowTaskInput={setShowTaskInput}
+            cancelTask={cancelTask}
+            addTask={addTask}
+          // <div key={project.id} className='w-auto shrink-0'>
+          // </div>
+          />
         ))}
 
         <div className='w-auto shrink-0'>
@@ -300,4 +372,5 @@ function RouteComponent() {
         </div>
       </div>
     </div>
+    </DragDropProvider>
   )}
