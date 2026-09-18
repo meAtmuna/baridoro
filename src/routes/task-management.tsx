@@ -1,13 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { Check, MoreVertical, X, Palette, Pencil, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 
 export const Route = createFileRoute('/task-management')({
   component: RouteComponent,
@@ -165,67 +166,53 @@ function RouteComponent() {
   })
 
   return (
-    <div className='p-2'>
+    <div className='min-h-screen overflow-auto p-2'>
       <h1 className='text-4xl font-bold mb-6'>
         Task Management
       </h1>
 
-      {!showInput ? (
-        <Button onClick={() => setShowInput(true)}>
-          Create New Project
-        </Button>
-      ) : (
-        <form 
-          onSubmit={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            projectForm.handleSubmit()
-          }}
-          className='flex items-center gap-2'
-        >
-          <projectForm.Field
-            name='projectName'
-            children={(field) => (
-              <>
-                <Input 
-                  placeholder="Enter project name"
-                  value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  className='max-w-sm'
-                />
-
-                <Button
-                  type='button'
-                  size="icon"
-                  variant='neutral'
-                  onClick={cancelCreate}
-                >
-                    <X />
-                </Button>
-
-                {field.state.value.trim() && (
-                  <Button
-                    type='submit'
-                    size="icon"
-                  >
-                      <Check />
-                  </Button>
-                )}
-              </>  
-            )}
-          />
-        </form>
-      )}
-
-      <div className='mt-6 space-y-4'>
+      <div className='mt-6 flex w-max items-start gap-6'>
         {projects.map((project, index) => (
-          <div key={index}>
-            <h1 className='font-bold text-xl'>
-              {project.name}
-            </h1>
+          <div key={index} className='w-auto shrink-0'>
+            <div className='flex items-center justify-between'>
+              <div className='flex items-center gap-3'>
+                <span className='h-3 w-3 rounded-full bg-red-500'/>
+                <h1 className='font-bold text-xl'>
+                  {project.name}
+                </h1>
+                <span className='rounded-full bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400'>
+                  {project.tasks.length}
+                </span>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                  >
+                    <MoreVertical className='h-4 w-4'/>
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuContent align='end' sideOffset={8} className='w-52 p-2'>
+                  <DropdownMenuItem>
+                    <Palette />
+                    Edit project color
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Pencil />
+                    Edit project name
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className='text-red-500 focus:text-red-500'>
+                    <Trash2 />
+                    Delete project
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <div className='mt-4 space-y-3'>
               {project.tasks.map((task, taskIndex) => (
-                  <Card key={taskIndex} className='w-80'>
+                <Card key={taskIndex} className='w-80'>
                     <CardContent className='p-4'>
                       <p className='font-bold text-lg'>
                         {task.name}
@@ -239,29 +226,78 @@ function RouteComponent() {
                     </CardContent>
                   </Card>
               ))}
-            </div>
 
-            {showTaskInput !== index ? (
-              <button
+              {showTaskInput !== index ? (
+                <button
                 className='mt-4'
                 onClick={() => setShowTaskInput(index)}
-              >
-                + Add New Task
-              </button>
-            ) : (
-              <TaskForm
-                onCreate={(task) => {
-                  const updatedProjects = [...projects]
-                  updatedProjects[index].tasks.push(task)
+                >
+                  + Add New Task
+                </button>
+              ) : (
+                <TaskForm
+                  onCreate={(task) => {
+                    const updatedProjects = [...projects]
+                    updatedProjects[index].tasks.push(task)
 
-                  setProjects(updatedProjects)
-                  setShowTaskInput(null)
-                }}
-                onCancel={cancelTask}
-              />
-            )}
+                    setProjects(updatedProjects)
+                    setShowTaskInput(null)
+                  }}
+                  onCancel={cancelTask}
+                />
+              )}
+            </div>
           </div>
         ))}
+
+        <div className='w-auto shrink-0'>
+        {!showInput ? (
+          <Button onClick={() => setShowInput(true)}>
+            Create New Project
+          </Button>
+        ) : (
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              projectForm.handleSubmit()
+            }}
+            className='flex items-center gap-2'
+          >
+            <projectForm.Field
+              name='projectName'
+              children={(field) => (
+                <>
+                  <Input 
+                    placeholder="Enter project name"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    className='max-w-sm'
+                  />
+  
+                  <Button
+                    type='button'
+                    size="icon"
+                    variant='neutral'
+                    onClick={cancelCreate}
+                  >
+                      <X />
+                  </Button>
+  
+                  {field.state.value.trim() && (
+                    <Button
+                      type='submit'
+                      size="icon"
+                    >
+                        <Check />
+                    </Button>
+                  )}
+                </>  
+              )}
+            />
+          </form>
+        )}
+        </div>
       </div>
     </div>
   )}
