@@ -134,6 +134,47 @@ function TaskForm({
   )
 }
 
+function TaskCard({
+  task,
+  index,
+  projectId,
+}: {
+  task: {
+    id: string
+    name: string
+    description: string
+  }
+  index: number
+  projectId: string
+}) {
+  const {ref} = useSortable({
+    id: task.id,
+    index,
+    type: 'task',
+    data: {
+      projectId,
+    }
+  }) 
+
+  return (
+    <div ref={ref}>
+      <Card key={task.id} className='w-80'>
+        <CardContent className='p-4'>
+          <p className='font-bold text-lg'>
+            {task.name}
+          </p>
+
+          {task.description && (
+            <p className='text-sm mt-1'>
+              {task.description}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
 function ProjectCard({
   project,
   index,
@@ -165,15 +206,15 @@ function ProjectCard({
     },
   ) => void
 }) {
-  const { ref } = useSortable({
-    id: project.id,
-    index,
-    type: 'project',
-  })
+  // const { ref } = useSortable({
+  //   id: project.id,
+  //   index,
+  //   type: 'project',
+  // })
 
   return (
     <div
-      ref={ref}
+      // ref={ref}
       className='w-auto shrink-0'
     >
       <div className='flex items-center justify-between'>
@@ -216,20 +257,12 @@ function ProjectCard({
         </DropdownMenu>
       </div>
       <div className='mt-4 space-y-3'>
-        {project.tasks.map((task) => (
-          <Card key={task.id} className='w-80'>
-              <CardContent className='p-4'>
-                <p className='font-bold text-lg'>
-                  {task.name}
-                </p>
-
-                {task.description && (
-                  <p className='text-sm mt-1'>
-                    {task.description}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+        {project.tasks.map((task, taskIndex) => (
+          <TaskCard
+            key={task.id}
+            task={task}
+            index={taskIndex}
+            projectId={project.id}/>
         ))}
 
         {showTaskInput !== index ? (
@@ -242,10 +275,6 @@ function ProjectCard({
         ) : (
           <TaskForm
             onCreate={(task) => {
-              // const updatedProjects = [...projects]
-              // updatedProjects[index].tasks.push(task)
-
-              // setProjects(updatedProjects)
               addTask(project.id, task)
               setShowTaskInput(null)
             }}
@@ -256,11 +285,11 @@ function ProjectCard({
     </div>
   )
 }
+
 function RouteComponent() {
   const [showInput, setShowInput] = useState(false)
-  // const [projects, setProjects] = useState<{ name: string; tasks: { name: string; description: string }[] }[]>([])
   const [showTaskInput, setShowTaskInput] = useState<number | null>(null)
-  const { projects, addProject, addTask, reorderProjects, } = useTaskStore()
+  const { projects, addProject, addTask, reorderTasks, } = useTaskStore()
 
   const cancelCreate = () => {
     setShowInput(false)
@@ -278,13 +307,6 @@ function RouteComponent() {
       onSubmit: projectSchema,
     },
     onSubmit: ({value}) => {
-      // setProjects([
-      //   ...projects,
-      //   {
-      //     name: value.projectName.trim(),
-      //     tasks: [],
-      //   },
-      // ])
       addProject(value.projectName.trim())
       projectForm.reset()
       setShowInput(false)
@@ -297,8 +319,16 @@ function RouteComponent() {
         if (event.canceled) return
 
         const {source} = event.operation
-        if (source?.type === 'project') {
-          reorderProjects(event)
+        // if (source?.type === 'project') {
+        //   reorderProjects(event)
+        // }
+        if (source?.type === 'task') {
+            console.log('task darg event:', event)
+            console.log('source:', event.operation.source)
+            console.log('target:', event.operation.target)
+            console.log('SOURCE DATA:', event.operation.source?.data)
+            console.log('TARGET DATA:', event.operation.target?.data)
+          reorderTasks(event)
         }
       }}
     >
@@ -317,8 +347,6 @@ function RouteComponent() {
             setShowTaskInput={setShowTaskInput}
             cancelTask={cancelTask}
             addTask={addTask}
-          // <div key={project.id} className='w-auto shrink-0'>
-          // </div>
           />
         ))}
 

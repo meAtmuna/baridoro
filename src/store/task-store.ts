@@ -26,6 +26,7 @@ type TaskStore = {
     ) => void
 
     reorderProjects: (event: any) => void
+    reorderTasks: (event: any) => void
 }
 
 export const useTaskStore = create<TaskStore>((set) => ({
@@ -64,4 +65,31 @@ export const useTaskStore = create<TaskStore>((set) => ({
     reorderProjects: (event) => set((state) => ({
         projects: move(state.projects, event),
     })),
+
+    reorderTasks: (event) => set((state) => {
+        const source = event.operation.source
+        const target = event.operation.target
+
+        if (!source || !target) return state 
+        
+        const sourceProjectId = source.data?.projectId
+        const targetProjectId = target.data?.projectId
+
+        if (!sourceProjectId || !targetProjectId) return state
+
+        if (sourceProjectId === targetProjectId) {
+            return {
+                projects: state.projects.map((project) => 
+                    project.id === sourceProjectId
+                        ? {
+                            ...project,
+                            tasks: move(project.tasks, event)
+                        }
+                        :project,
+                ),
+            }
+        }
+
+        return state
+    }),
 }))
