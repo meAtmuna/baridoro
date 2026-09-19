@@ -16,6 +16,7 @@ export type Task = {
 
 type TaskStore = {
     projects: Project[]
+    fetchProjects:() => void
     addProject: (name: string) => void
 
     addTask: (
@@ -95,21 +96,21 @@ export const useTaskStore = create<TaskStore>((set) => ({
         const sourceProjectId = source.data?.projectId
         const targetProjectId = target.data?.projectId
 
-        if (!sourceProjectId || !targetProjectId) return state
+            if (!sourceProjectId || !targetProjectId) return state
 
-        if (sourceProjectId === targetProjectId) {
-            return {
-                projects: state.projects.map((project) => 
-                    project.id === sourceProjectId
-                        ? {
-                            ...project,
-                            tasks: move(project.tasks, event)
-                        }
-                        :project,
-                ),
+            if (sourceProjectId === targetProjectId) {
+                return {
+                    projects: state.projects.map((project) => 
+                        project.id === sourceProjectId
+                            ? {
+                                ...project,
+                                tasks: move(project.tasks, event)
+                            }
+                            :project,
+                    ),
             }
-        }
+            }
 
-        return state
+            return state
     }),
 }))
