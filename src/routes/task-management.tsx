@@ -1,17 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { Check, MoreVertical, X, Palette, Pencil, Trash2 } from 'lucide-react'
+import { Check, MoreVertical, X, Palette, Pencil, Trash2, PlusIcon } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { Textarea } from '@/components/ui/textarea'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useTaskStore } from '@/store/task-store'
 import { DragDropProvider} from '@dnd-kit/react'
-import { useSortable } from '@dnd-kit/react/sortable'
+import { TaskCard, TaskForm } from '@/components/task'
 
 export const Route = createFileRoute('/task-management')({
   component: RouteComponent,
@@ -20,160 +17,6 @@ export const Route = createFileRoute('/task-management')({
 const projectSchema = z.object({
   projectName: z.string().trim().min(1, 'Project name is required'),
 })
-
-const taskSchema = z.object({
-  taskName: z.string().trim().min(1, 'Task name is required'),
-  description: z.string().trim(),
-})
-
-function TaskForm({
-  onCreate,
-  onCancel,
-} : {
-  onCreate: (task: {name: string; description: string}) => void
-  onCancel: () => void
-}) {
-  const taskForm = useForm({
-    defaultValues: {
-      taskName: '',
-      description: '',
-    },
-    validators: {
-      onSubmit: taskSchema,
-    },
-    onSubmit: ({value}) => {
-      onCreate({
-        name: value.taskName.trim(),
-        description: value.description.trim(),
-      })
-
-      taskForm.reset()
-    },
-  })
-  
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        taskForm.handleSubmit()
-        }}
-      className='mt-4 space-y-2 w-80'
-    >
-      <taskForm.Field
-        name='taskName'
-        children={(field) => {
-          const isInvalid = field.state.meta.isTouched && field.state.meta.errors.length > 0
-          
-          return (
-            <Field data-invalid={isInvalid}>
-              <FieldLabel htmlFor={field.name}>
-                Task Name
-              </FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                onBlur={field.handleBlur}
-                aria-invalid={isInvalid}
-                placeholder='Task name'
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-              {isInvalid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
-            </Field>
-          )
-        }}
-      />
-
-      <taskForm.Field
-        name='description'
-        children={(field) => (
-          <Field>
-            <FieldLabel htmlFor={field.name}>
-              Description
-            </FieldLabel>
-            <Textarea
-              id={field.name}
-              name={field.name}
-              onBlur={field.handleBlur}
-              placeholder='Description'
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          </Field>
-        )}
-      />
-
-      <div className='flex items-center gap-2 justify-end'>
-        <Button
-          size='icon'
-          variant='neutral'
-          type='button'
-          onClick={onCancel}
-        >
-          <X />
-        </Button>
-
-        <taskForm.Field
-          name='taskName'
-          children={(field) => 
-            field.state.value.trim() && (
-              <Button
-                size='icon'
-                type='submit'
-              >
-                <Check />
-              </Button>
-            )
-          }
-        />
-      </div>
-    </form>
-  )
-}
-
-function TaskCard({
-  task,
-  index,
-  projectId,
-}: {
-  task: {
-    id: string
-    name: string
-    description: string
-  }
-  index: number
-  projectId: string
-}) {
-  const {ref} = useSortable({
-    id: task.id,
-    index,
-    type: 'task',
-    data: {
-      projectId,
-    }
-  }) 
-
-  return (
-    <div ref={ref}>
-      <Card key={task.id} className='w-80'>
-        <CardContent className='p-4'>
-          <p className='font-bold text-lg'>
-            {task.name}
-          </p>
-
-          {task.description && (
-            <p className='text-sm mt-1'>
-              {task.description}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
 
 function ProjectCard({
   project,
@@ -217,7 +60,7 @@ function ProjectCard({
       // ref={ref}
       className='w-auto shrink-0'
     >
-      <div className='flex items-center justify-between'>
+      <div className='flex items-center justify-between gap-44'>
         <div className='flex items-center gap-3'>
           <span 
             className='h-3 w-3 rounded-full'
@@ -231,10 +74,11 @@ function ProjectCard({
           </span>
         </div>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger>
             <Button
-              variant='ghost'
-              size='icon'
+              variant='neutral'
+              size='icon-xs'
+              className="hover:cursor-pointer"
             >
               <MoreVertical className='h-4 w-4'/>
             </Button>
@@ -266,12 +110,10 @@ function ProjectCard({
         ))}
 
         {showTaskInput !== index ? (
-          <button
-          className='mt-4'
-          onClick={() => setShowTaskInput(index)}
-          >
-            + Add New Task
-          </button>
+          <Button size="sm"  className="hover:cursor-pointer w-full" onClick={() => setShowTaskInput(index)} variant="neutral">
+            <PlusIcon />
+            Add Task
+          </Button>
         ) : (
           <TaskForm
             onCreate={(task) => {
