@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { move } from '@dnd-kit/helpers'
+import { supabase } from '@/lib/supabase'
 
 export type Project = {
     id: string
@@ -32,17 +33,35 @@ type TaskStore = {
 export const useTaskStore = create<TaskStore>((set) => ({
     projects: [], 
 
-    addProject: (name) => set((state) => ({
-        projects: [
-            ...state.projects,
-            {
-                id: crypto.randomUUID(),
-                name,
-                color: '#ef4444',
-                tasks: [],
-            },
-        ],
-    })),
+    fetchProjects: async () => {
+        const {data,error} = await supabase.from("projects").select("*, tasks(*)");
+        if(error) {
+            console.error("Error fetching projects:", error);
+            return;
+        }
+        if(data) set({projects: data});
+    },
+
+    addProject: async (name) => {
+        const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+        const {data,error} = await supabase.from("projects").insert([{name,color:randomColor}]).select().single();
+
+        if(error) {
+            console.error("Error adding project:",error);
+            return;
+        }
+        if(data){
+            set((state) => ({
+                projects: [
+                    ...state.projects,
+                    {
+                        ...data,
+                        tasks: [],
+                    },
+                ],
+            }))
+        }
+    },
 
     addTask: (projectId, task) => set((state) => ({
         projects: state.projects.map((project) => 
