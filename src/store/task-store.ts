@@ -11,10 +11,13 @@ export type Task = {
     id: string
     name: string
     description: string
+    date: string
+    completed: boolean
 }
 
 type TaskStore = {
     projects: Project[]
+    setProjects: (projects: Project[]) => void
     addProject: (name: string) => void
     updateProjectColor: (projectId: string, color: string) => void
     updateProjectName: (projectId: string, name: string) => void
@@ -25,8 +28,11 @@ type TaskStore = {
         task: {
             name: string
             description: string
+            date: string
         },
     ) => void
+    toggleTask: (projectId: string, taskId: string) => void 
+    deleteTask: (projectId: string, taskId: string) => void 
 
     
     reorderProjects: (event: any) => void
@@ -35,7 +41,7 @@ type TaskStore = {
 
 export const useTaskStore = create<TaskStore>((set) => ({
     projects: [], 
-
+    setProjects: (projects) => set({ projects }),
     addProject: (name) => set((state) => ({
         projects: [
             ...state.projects,
@@ -59,9 +65,37 @@ export const useTaskStore = create<TaskStore>((set) => ({
                             id: crypto.randomUUID(),
                             name: task.name,
                             description: task.description,
+                            date: task.date,
+                            completed: false,
                         },
                     ],
                 } 
+                : project,
+        ),
+    })),
+
+    toggleTask: (projectId, taskId) => set((state) => ({
+        projects: state.projects.map((project) =>
+            project.id === projectId
+                ? {
+                    ...project,
+                    tasks: project.tasks.map((task) =>
+                        task.id === taskId
+                            ? { ...task, completed: !task.completed }
+                            : task,
+                    ),
+                }
+                : project,
+        ),
+    })),
+
+    deleteTask: (projectId, taskId) => set((state) => ({
+        projects: state.projects.map((project) =>
+            project.id === projectId
+                ? {
+                    ...project,
+                    tasks: project.tasks.filter((task) => task.id !== taskId),
+                }
                 : project,
         ),
     })),
@@ -99,60 +133,72 @@ export const useTaskStore = create<TaskStore>((set) => ({
     })),
 
     reorderTasks: (event) => set((state) => {
-        const source = event.operation.source
-        const target = event.operation.target
-
-        if (!source || !target) return state 
-        
-        const sourceProjectId = source.data?.projectId
-        const targetProjectId = target.data?.projectId
-
-        if (!sourceProjectId || !targetProjectId) return state
-
-        if (sourceProjectId === targetProjectId) {
-            return {
-                projects: state.projects.map((project) => 
-                    project.id === sourceProjectId
-                        ? {
-                            ...project,
-                            tasks: move(project.tasks, event)
-                        }
-                        :project,
-                ),
-            }
-        }
-
-        const sourceProject = state.projects.find(
-            (project) => project.id === sourceProjectId,
+        const record = Object.fromEntries(
+            state.projects.map((p) => [p.id, p.tasks]),
         )
-        if (!sourceProject) return state
 
-        const task = sourceProject.tasks.find(
-            (task) => task.id === source.id,
-        )
-        if (!task) return state
+        const next = move(record, event)
 
         return {
-            projects: state.projects.map((project) => {
-                if ((project.id === sourceProjectId)) {
-                    return {
-                        ...project,
-                        tasks: project.tasks.filter(
-                            (task) => task.id !== source.id,
-                        ),
-                    }
-                }
-                if (project.id === targetProjectId) {
-                    return {
-                        ...project,
-                        tasks: [
-                            ...project.tasks,
-                            task,
-                        ],
-                    }
-                }
-                return project
-            })
+            projects: state.projects.map((p) => ({
+                ...p,
+                tasks: next[p.id] ?? p.tasks,
+            })),
         }
+        // const source = event.operation.source
+        // const target = event.operation.target
+
+        // if (!source || !target) return state 
+        
+        // const sourceProjectId = source.data?.projectId
+        // const targetProjectId = target.data?.projectId
+
+        // if (!sourceProjectId || !targetProjectId) return state
+
+        // if (sourceProjectId === targetProjectId) {
+        //     return {
+        //         projects: state.projects.map((project) => 
+        //             project.id === sourceProjectId
+        //                 ? {
+        //                     ...project,
+        //                     tasks: move(project.tasks, event)
+        //                 }
+        //                 :project,
+        //         ),
+        //     }
+        // }
+
+        // const sourceProject = state.projects.find(
+        //     (project) => project.id === sourceProjectId,
+        // )
+        // if (!sourceProject) return state
+
+        // const task = sourceProject.tasks.find(
+        //     (task) => task.id === source.id,
+        // )
+        // if (!task) return state
+
+        // return {
+        //     projects: state.projects.map((project) => {
+        //         if ((project.id === sourceProjectId)) {
+        //             return {
+        //                 ...project,
+        //                 tasks: project.tasks.filter(
+        //                     (task) => task.id !== source.id,
+        //                 ),
+        //             }
+        //         }
+        //         if (project.id === targetProjectId) {
+        //             return {
+        //                 ...project,
+        //                 tasks: [
+        //                     ...project.tasks,
+        //                     task,
+        //                 ],
+        //             }
+        //         }
+        //         return project
+        //     })
+        // }
     }),
 }))

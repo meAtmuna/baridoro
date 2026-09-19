@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
-import { useState, useEffect } from 'react'
-import { Check, MoreVertical, X, Palette, Pencil, Trash2 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Check, MoreVertical, X, Palette, Pencil, Trash2, Search, CalendarDays } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { useForm } from '@tanstack/react-form'
@@ -9,7 +9,7 @@ import { z } from 'zod'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { useTaskStore } from '@/store/task-store'
+import { useTaskStore, type Project, type Task} from '@/store/task-store'
 import { DragDropProvider} from '@dnd-kit/react'
 import { useSortable } from '@dnd-kit/react/sortable'
 
@@ -24,19 +24,28 @@ const projectSchema = z.object({
 const taskSchema = z.object({
   taskName: z.string().trim().min(1, 'Task name is required'),
   description: z.string().trim(),
+  date: z.string(),
 })
+
+const formatDate = (date: string) => 
+  new Date(date + 'T00:00:00').toLocaleDateString('en-GB',{
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 
 function TaskForm({
   onCreate,
   onCancel,
 } : {
-  onCreate: (task: {name: string; description: string}) => void
+  onCreate: (task: {name: string; description: string; date: string }) => void
   onCancel: () => void
 }) {
   const taskForm = useForm({
     defaultValues: {
       taskName: '',
       description: '',
+      date: '',
     },
     validators: {
       onSubmit: taskSchema,
@@ -45,6 +54,7 @@ function TaskForm({
       onCreate({
         name: value.taskName.trim(),
         description: value.description.trim(),
+        date: value.date,
       })
 
       taskForm.reset()
@@ -58,7 +68,7 @@ function TaskForm({
         e.stopPropagation()
         taskForm.handleSubmit()
         }}
-      className='mt-4 space-y-2 w-80'
+      className='mt-4 space-y-2 w-64'
     >
       <taskForm.Field
         name='taskName'
@@ -106,6 +116,25 @@ function TaskForm({
         )}
       />
 
+      <taskForm.Field
+        name='date'
+        children={(field) => (
+          <Field>
+            <FieldLabel htmlFor={field.name}>
+              Date
+            </FieldLabel>
+            <Input
+              id={field.name}
+              name={field.name}
+              type='date'
+              onBlur={field.handleBlur}
+              value={field.state.value}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+          </Field>
+        )}
+      />
+
       <div className='flex items-center gap-2 justify-end'>
         <Button
           size='icon'
@@ -138,20 +167,26 @@ function TaskCard({
   task,
   index,
   projectId,
+  dragDisabled,
+  toggleTask,
+  deleteTask,
 }: {
-  task: {
-    id: string
-    name: string
-    description: string
-  }
+  task: Task
   index: number
   projectId: string
+  dragDisabled: boolean
+  toggleTask: (projectId: string, taskId: string) => void
+  deleteTask: (projectId: string, taskId: string) => void
 }) {
   const {ref} = useSortable({
     id: task.id,
     index,
     type: 'task',
+    accept: 'task',
+    group: projectId,
+    disabled: dragDisabled,
     data: {
+      type: 'task',
       projectId,
     }
   }) 
@@ -162,15 +197,48 @@ function TaskCard({
       data-task-id={task.id}
       data-project-id={projectId}
     >
-      <Card className='w-80'>
-        <CardContent className='p-4'>
-          <p className='font-bold text-lg'>
-            {task.name}
-          </p>
+      <Card className='w-64'>
+        <CardContent className='p-3'>
+          <div className='flex items-start justify-between gap-2'>
+            <div className='min-w-0'>
+              <p className={`font-bold text-sm break-words ${task.completed ? 'line-through opacity-60' : ''}`}>
+                {task.name}
+              </p>
 
-          {task.description && (
-            <p className='text-sm mt-1'>
-              {task.description}
+              {task.description && (
+                <p className={`text-xs mt-1 break-words ${task.completed ? 'line-through opacity-60' : ''}`}>
+                  {task.description}
+                </p>
+              )}
+            </div>
+
+            <div className='flex shrink-0 items-center gap-1'>
+              <Button
+                size='icon'
+                variant='neutral'
+                className={`h-7 w-7 cursor-pointer ${task.completed ? 'bg-green-500' : ''}`}
+                onClick={() => toggleTask(projectId, task.id)}
+                title='Complete'
+              >
+                <Check className='h-4 w-4' />
+              </Button>
+
+              <Button
+                size='icon'
+                variant='neutral'
+                className='h-7 w-7 cursor-pointer'
+                onClick={() => deleteTask(projectId, task.id)}
+                title='Delete'
+              >
+                <Trash2 className='h-4 w-4 text-red-500' />
+              </Button>
+            </div>
+          </div>
+
+          {task.date && (
+            <p className='mt-2 flex items-center gap-1 text-xs text-muted-foreground'>
+              <CalendarDays className='h-3 w-3' />
+              {formatDate(task.date)}
             </p>
           )}
         </CardContent>
@@ -189,19 +257,13 @@ function ProjectCard({
   updateProjectColor,
   updateProjectName,
   deleteProject,
+  toggleTask,
+  deleteTask,
+  search,
 }: {
-  project: {
-    id: string
-    name: string
-    color: string
-    tasks: {
-      id: string
-      name: string
-      description: string
-    }[]
-  }
-
+  project: Project
   index: number
+  search: string
   showTaskInput: number | null
   setShowTaskInput: (index: number | null) => void
   cancelTask: () => void
@@ -209,7 +271,8 @@ function ProjectCard({
     projectId: string,
     task: {
       name: string
-      description: string
+      description: string;
+      date: string
     },
   ) => void
   updateProjectColor: (
@@ -225,12 +288,26 @@ function ProjectCard({
   deleteProject: (
     projectId: string,
   ) => void
+
+  toggleTask: (
+    projectId: string,
+    taskId: string
+  ) => void
+
+  deleteTask: (
+    projectId: string,
+    taskId: string
+  ) => void
 }) {
-  const { ref } = useSortable({
+  const { ref, handleRef } = useSortable({
     id: project.id,
     index,
     type: 'project',
-    // disabled: false,
+    accept: ['project', 'task'],
+    collisionPriority: 1,
+    data: {
+      type: 'project',
+    }
   })
 
   const [showColorModal, setShowColorModal] = useState(false)
@@ -244,23 +321,33 @@ function ProjectCard({
     setProjectName(project.name)
   }, [project.color, project.name])
 
+  const searchText = search.trim().toLowerCase()
+  const filteredTasks = searchText
+    ? project.tasks.filter(
+      (task) =>
+          task.name.toLowerCase().includes(searchText) ||
+          task.description.toLowerCase().includes(searchText),
+      )
+    : project.tasks
+  
+  const hideProject = searchText !== '' && filteredTasks.length === 0
   return (
     <div
       ref={ref}
-      className='w-auto shrink-0'
+      className={hideProject ? 'hidden' : 'w-auto shrink-0'}
     >
       <div className='flex items-center justify-between'>
-        <div className='flex items-center gap-3'>
-          <span 
-            className='h-3 w-3 rounded-full'
-            style={{backgroundColor: project.color}}
-          />
-          <h1 className='font-bold text-xl'>
-            {project.name}
-          </h1>
-          <span className='rounded-full bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400'>
-            {project.tasks.length}
-          </span>
+        <div ref={handleRef} className='flex items-center flex-1 cursor-grab gap-3'>
+            <span 
+              className='h-3 w-3 rounded-full'
+              style={{backgroundColor: project.color}}
+            />
+            <h1 className='font-bold text-xl'>
+              {project.name}
+            </h1>
+            <span className='rounded-full bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400'>
+              {project.tasks.length}
+            </span>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -301,13 +388,17 @@ function ProjectCard({
         </DropdownMenu>
       </div>
       <div className='mt-4 space-y-3'>
-        <div className='space-y-3 min-h-10' data-project-id={project.id}>
-          {project.tasks.map((task, taskIndex) => (
+        <div className='space-y-3 min-h-16' data-project-id={project.id}>
+          {filteredTasks.map((task, taskIndex) => (
             <TaskCard
               key={task.id}
               task={task}
               index={taskIndex}
-              projectId={project.id}/>
+              projectId={project.id}
+              dragDisabled={searchText !== ''}
+              toggleTask={toggleTask}
+              deleteTask={deleteTask}
+            />
           ))}
 
           {showTaskInput !== index ? (
@@ -541,7 +632,9 @@ function ProjectCard({
 function RouteComponent() {
   const [showInput, setShowInput] = useState(false)
   const [showTaskInput, setShowTaskInput] = useState<number | null>(null)
-  const { projects, addProject, addTask, reorderTasks, reorderProjects, updateProjectColor, updateProjectName, deleteProject, } = useTaskStore()
+  const { projects, addProject, addTask, reorderTasks, reorderProjects, updateProjectColor, updateProjectName, deleteProject, setProjects, toggleTask, deleteTask} = useTaskStore()
+  const projectBeforeDrag = useRef<Project[]>([])
+  const [search, setSearch] = useState('')
 
   const cancelCreate = () => {
     setShowInput(false)
@@ -567,24 +660,44 @@ function RouteComponent() {
 
   return (
     <DragDropProvider
+      onDragStart={() => {
+        projectBeforeDrag.current = projects
+      }}
+      onDragOver={(event) => {
+        const { source } = event.operation
+        if (source?.type !== 'task') return 
+        reorderTasks(event)
+      }}
       onDragEnd={(event) => {
-        if (event.canceled) return
-
         const {source} = event.operation
+
+        if (event.canceled) {
+          if (source?.type === 'task') setProjects(projectBeforeDrag.current)
+          return
+        }
+
         if (source?.type === 'project') {
           reorderProjects(event)
-        }
-        if (source?.type === 'task') {
-          reorderTasks(event)
         }
       }}
     >
     <div className='min-h-screen overflow-auto p-2'>
-      <h1 className='text-4xl font-bold mb-6'>
-        Task Management
-      </h1>
+      <div className='mb-6 flex items-center justify-between gap-4'>
+        <h1 className='text-4xl font-bold'>
+          Task Management
+        </h1>
 
-      <div className='mt-6 flex w-max items-start gap-6'>
+        <div className='relative w-64 ml-auto'>
+          <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder='Search tasks...'
+            className='pl-9'
+          />
+        </div>
+      </div>
+      <div className='mt-6 flex w-max items-start gap-12'>
         {projects.map((project, index) => (
           <ProjectCard
             key={project.id}
@@ -597,6 +710,9 @@ function RouteComponent() {
             updateProjectColor={updateProjectColor}
             updateProjectName={updateProjectName}
             deleteProject={deleteProject}
+            toggleTask={toggleTask}        
+            deleteTask={deleteTask}
+            search={search}
           />
         ))}
 
