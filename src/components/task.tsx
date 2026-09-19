@@ -1,9 +1,7 @@
 import { useForm } from "@tanstack/react-form";
-import * as React from "react"
 import z from "zod";
-import { Field, FieldError, FieldLabel } from "./ui/field";
+import { Field, FieldError } from "./ui/field";
 import { Input } from "./ui/input";
-import { Textarea } from "./ui/textarea";
 import { Button } from "./ui/button";
 import { Check, X } from "lucide-react";
 import { useSortable } from "@dnd-kit/react/sortable";
@@ -47,7 +45,7 @@ export function TaskForm({
         e.stopPropagation()
         taskForm.handleSubmit()
         }}
-      className='mt-4 space-y-2 w-80 border-border border-2 p-4 rounded shadow-shadow'
+      className=' space-y-2 w-80 border-border border-2 p-4 rounded shadow-shadow'
     >
       <taskForm.Field
         name='taskName'

@@ -1,14 +1,16 @@
+import { TaskCard, TaskForm } from '@/components/task';
 import { Button } from '@/components/ui/button';
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider'
 import { supabase } from '@/lib/supabase';
 import { useForm } from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router'
-import { TimerResetIcon, Upload } from 'lucide-react';
+import { FolderIcon, PlusIcon, TimerResetIcon, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react'
 import { z } from 'zod';
 
@@ -26,19 +28,13 @@ const uploadSchema = z.object({
     )
 })
 
-interface Task {
-  id:string
-  title:string
-  description:string
-  is_completed: boolean
-}
-
 function RouteComponent() {
   const [selectedMinutes,setSelectedMinutes] = useState<number[]>([0.5]);
   const [secondsLeft,setSecondsLeft] = useState<number>(selectedMinutes[0]*60);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [backgroundImage, setBackgroundImage] = useState<string>("/b.jpg");
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  const [showTaskForm, setShowTaskForm] = useState<boolean>(false);
   
   // const [tasks, setTasks] = useState<Task |null>(null);
 
@@ -123,6 +119,10 @@ function RouteComponent() {
     setSecondsLeft(selectedMinutes[0] * 60);
   }
 
+  const cancelTask = () => {
+    setShowTaskForm(false);
+  }
+
   return (
     <div className="font-base min-h-screen w-full bg-cover bg-center bg-no-repeat bg-[url('/b.jpg')] flex flex-col justify-between p-8" style={{ backgroundImage: `url('${backgroundImage}')` }}>
       <div className="h-10" />
@@ -157,11 +157,60 @@ function RouteComponent() {
               Non Modal
             </DrawerTrigger>
             <DrawerContent className="!top-1/2 !-translate-y-1/2 !h-[90vh] border-2 border-solid border-black ring-inset shadow-shadow border-border box-border">
-              <DrawerHeader>
-                <DrawerTitle>Non Modal Drawer</DrawerTitle>
+              <DrawerHeader  className="pb-0">
+                <DrawerTitle>Task List</DrawerTitle>
               </DrawerHeader>
               <div className="flex-1 p-4">
-                <div className="rounded-base bg-secondary-background group-data-[swipe-axis=x]/drawer-popup:size-full group-data-[swipe-axis=y]/drawer-popup:h-80 group-data-[swipe-axis=y]/drawer-popup:w-full" />
+                <div className="flex items-center justify-center p-6 min-h-[inherit] rounded-base border-border border-solid border-2 bg-secondary-background group-data-[swipe-axis=x]/drawer-popup:size-full group-data-[swipe-axis=y]/drawer-popup:h-80 group-data-[swipe-axis=y]/drawer-popup:w-full" >
+                  {
+                  showTaskForm ?
+                    <div className="self-start mt-0 flex flex-col gap-2">
+                      <TaskCard
+                        key={"asdf"}
+                        task={{id:"1",name:"asdf",description:"asdf"}}
+                        index={1}
+                        projectId={"1"}
+                      />
+                      <TaskCard
+                        key={"asdf"}
+                        task={{id:"1",name:"asdf",description:"asdf"}}
+                        index={1}
+                        projectId={"1"}
+                      />
+                      <TaskCard
+                        key={"asdf"}
+                        task={{id:"1",name:"asdf",description:"asdf"}}
+                        index={1}
+                        projectId={"1"}
+                      />
+                      <TaskForm
+                        onCreate={(task) => {
+                          // addTask(project.id, task)
+                          setShowTaskForm(false);
+                        }}
+                        onCancel={cancelTask}
+                      /> 
+                    </div>
+                    :
+                    <Empty className="max-w-md w-full border-border border-dashed rounded-base bg-secondary-background group-data-[swipe-axis=x]/drawer-popup:size-full group-data-[swipe-axis=y]/drawer-popup:h-80 group-data-[swipe-axis=y]/drawer-popup:w-full">
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                          <FolderIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>No tasks match these filters</EmptyTitle>
+                        <EmptyDescription>
+                          Create a task that fits this view, or adjust your filters.
+                        </EmptyDescription>
+                      </EmptyHeader>
+                      <EmptyContent>
+                        <Button size="sm" className="hover:cursor-pointer" onClick={() => setShowTaskForm(true)}>
+                          <PlusIcon />
+                          Create Task
+                        </Button>
+                      </EmptyContent>
+                    </Empty>
+                  }
+                </div>
               </div>
             </DrawerContent>
           </Drawer>
