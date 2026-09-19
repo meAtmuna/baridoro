@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { move } from '@dnd-kit/helpers'
+import { supabase } from '@/lib/supabase'
 
 export type Project = {
     id: string
@@ -18,6 +19,7 @@ export type Task = {
 type TaskStore = {
     projects: Project[]
     setProjects: (projects: Project[]) => void
+    fetchProjects:() => void
     addProject: (name: string) => void
     updateProjectColor: (projectId: string, color: string) => void
     updateProjectName: (projectId: string, name: string) => void
@@ -73,6 +75,55 @@ export const useTaskStore = create<TaskStore>((set) => ({
                 : project,
         ),
     })),
+
+    fetchProjects: async () => {
+        const {data,error} = await supabase.from("projects").select("*, tasks(*)");
+        if(error) {
+            console.error("Error fetching projects:", error);
+            return;
+        }
+        if(data) set({projects: data});
+    },
+
+    addProject: async (name) => {
+        const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+        const {data,error} = await supabase.from("projects").insert([{name,color:randomColor}]).select().single();
+
+        if(error) {
+            console.error("Error adding project:",error);
+            return;
+        }
+        if(data){
+            set((state) => ({
+                projects: [
+                    ...state.projects,
+                    {
+                        ...data,
+                        tasks: [],
+                    },
+                ],
+            }))
+        }
+    },
+
+    addTask: async (projectId, task) => { 
+        const {data,error} = await supabase.from("tasks").insert([{project_id:projectId,name:task.name,description:task.description}]).select().single();
+
+        if(error){
+            console.error("Error adding task:",error);
+            return;
+        }
+
+        if(data){
+            set((state) => ({
+                projects: state.projects.map((project) => 
+                    project.id === projectId
+                        ? {...project,tasks: [...project.tasks,data],} 
+                        : project,
+                ),
+            }))
+        }
+    },
 
     toggleTask: (projectId, taskId) => set((state) => ({
         projects: state.projects.map((project) =>

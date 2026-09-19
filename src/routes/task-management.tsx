@@ -2,16 +2,18 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect, useRef } from 'react'
 import { Check, MoreVertical, X, Palette, Pencil, Trash2, Search, CalendarDays } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Check, MoreVertical, X, Palette, Pencil, Trash2, PlusIcon } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent } from '@/components/ui/card'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { Textarea } from '@/components/ui/textarea'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useTaskStore, type Project, type Task} from '@/store/task-store'
 import { DragDropProvider} from '@dnd-kit/react'
 import { useSortable } from '@dnd-kit/react/sortable'
+import { useTaskStore } from '@/store/task-store'
+import { DragDropProvider, useDroppable} from '@dnd-kit/react'
+import { TaskCard, TaskForm } from '@/components/task'
 
 export const Route = createFileRoute('/task-management')({
   component: RouteComponent,
@@ -348,12 +350,25 @@ function ProjectCard({
             <span className='rounded-full bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400'>
               {project.tasks.length}
             </span>
+      <div className={'flex items-center justify-between min-w-[300px]'}>
+        <div className='flex items-center gap-3 flex-1 min-w-0'>
+          <span 
+            className='h-3 w-3 rounded-full'
+            style={{backgroundColor: project.color}}
+          />
+          <h1 className='font-bold text-xl'>
+            {project.name}
+          </h1>
+          <span className='rounded-full bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400'>
+            {project.tasks.length}
+          </span>
         </div>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger>
             <Button
-              variant='ghost'
-              size='icon'
+              variant='neutral'
+              size='icon-xs'
+              className="hover:cursor-pointer"
             >
               <MoreVertical className='h-4 w-4'/>
             </Button>
@@ -418,6 +433,20 @@ function ProjectCard({
             />
           )}
         </div>
+        {showTaskInput !== index ? (
+          <Button size="sm"  className="hover:cursor-pointer w-full" onClick={() => setShowTaskInput(index)} variant="neutral">
+            <PlusIcon />
+            Add Task
+          </Button>
+        ) : (
+          <TaskForm
+            onCreate={(task) => {
+              addTask(project.id, task)
+              setShowTaskInput(null)
+            }}
+            onCancel={cancelTask}
+          />
+        )}
       </div>
 
       {showColorModal && (
@@ -635,7 +664,12 @@ function RouteComponent() {
   const { projects, addProject, addTask, reorderTasks, reorderProjects, updateProjectColor, updateProjectName, deleteProject, setProjects, toggleTask, deleteTask} = useTaskStore()
   const projectBeforeDrag = useRef<Project[]>([])
   const [search, setSearch] = useState('')
+  const { projects,fetchProjects, addProject, addTask, reorderTasks, } = useTaskStore()
 
+  useEffect(() => {
+    fetchProjects();
+  },[fetchProjects])
+  
   const cancelCreate = () => {
     setShowInput(false)
   }
@@ -718,7 +752,7 @@ function RouteComponent() {
 
         <div className='w-auto shrink-0'>
         {!showInput ? (
-          <Button onClick={() => setShowInput(true)}>
+          <Button onClick={() => setShowInput(true)} className="hover:cursor-pointer">
             Create New Project
           </Button>
         ) : (
@@ -746,6 +780,7 @@ function RouteComponent() {
                     size="icon"
                     variant='neutral'
                     onClick={cancelCreate}
+                    className="hover:cursor-pointer"
                   >
                       <X />
                   </Button>
@@ -754,6 +789,7 @@ function RouteComponent() {
                     <Button
                       type='submit'
                       size="icon"
+                      className="hover:cursor-pointer"
                     >
                         <Check />
                     </Button>
