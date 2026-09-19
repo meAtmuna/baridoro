@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as StatisticsRouteImport } from './routes/statistics'
+import { Route as TaskManagementRouteImport } from './routes/task-management'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,44 @@ const StatisticsRoute = StatisticsRouteImport.update({
   path: '/statistics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TaskManagementRoute = TaskManagementRouteImport.update({
+  id: '/task-management',
+  path: '/task-management',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/notes': typeof NotesRoute
   '/statistics': typeof StatisticsRoute
+  '/task-management': typeof TaskManagementRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/notes': typeof NotesRoute
   '/statistics': typeof StatisticsRoute
+  '/task-management': typeof TaskManagementRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/notes': typeof NotesRoute
   '/statistics': typeof StatisticsRoute
+  '/task-management': typeof TaskManagementRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/notes' | '/statistics'
+  fullPaths: '/' | '/notes' | '/statistics' | '/task-management'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/notes' | '/statistics'
-  id: '__root__' | '/' | '/notes' | '/statistics'
+  to: '/' | '/notes' | '/statistics' | '/task-management'
+  id: '__root__' | '/' | '/notes' | '/statistics' | '/task-management'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   NotesRoute: typeof NotesRoute
   StatisticsRoute: typeof StatisticsRoute
+  TaskManagementRoute: typeof TaskManagementRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StatisticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/task-management': {
+      id: '/task-management'
+      path: '/task-management'
+      fullPath: '/task-management'
+      preLoaderRoute: typeof TaskManagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   NotesRoute: NotesRoute,
   StatisticsRoute: StatisticsRoute,
+  TaskManagementRoute: TaskManagementRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
