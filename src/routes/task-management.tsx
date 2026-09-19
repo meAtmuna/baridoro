@@ -194,7 +194,7 @@ function RouteComponent() {
 
         <div className='w-auto shrink-0'>
         {!showInput ? (
-          <Button onClick={() => setShowInput(true)}>
+          <Button onClick={() => setShowInput(true)} className="hover:cursor-pointer">
             Create New Project
           </Button>
         ) : (
@@ -222,6 +222,7 @@ function RouteComponent() {
                     size="icon"
                     variant='neutral'
                     onClick={cancelCreate}
+                    className="hover:cursor-pointer"
                   >
                       <X />
                   </Button>
@@ -230,6 +231,7 @@ function RouteComponent() {
                     <Button
                       type='submit'
                       size="icon"
+                      className="hover:cursor-pointer"
                     >
                         <Check />
                     </Button>

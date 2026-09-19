@@ -63,23 +63,24 @@ export const useTaskStore = create<TaskStore>((set) => ({
         }
     },
 
-    addTask: (projectId, task) => set((state) => ({
-        projects: state.projects.map((project) => 
-            project.id === projectId
-                ? {
-                    ...project,
-                    tasks: [
-                        ...project.tasks,
-                        {
-                            id: crypto.randomUUID(),
-                            name: task.name,
-                            description: task.description,
-                        },
-                    ],
-                } 
-                : project,
-        ),
-    })),
+    addTask: async (projectId, task) => { 
+        const {data,error} = await supabase.from("tasks").insert([{project_id:projectId,name:task.name,description:task.description}]).select().single();
+
+        if(error){
+            console.error("Error adding task:",error);
+            return;
+        }
+
+        if(data){
+            set((state) => ({
+                projects: state.projects.map((project) => 
+                    project.id === projectId
+                        ? {...project,tasks: [...project.tasks,data],} 
+                        : project,
+                ),
+            }))
+        }
+    },
 
     reorderProjects: (event) => set((state) => ({
         projects: move(state.projects, event),
