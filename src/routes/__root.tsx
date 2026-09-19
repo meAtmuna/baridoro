@@ -11,7 +11,7 @@ const RootLayout = () => (
         <Outlet />
       </SidebarInset>
     </SidebarProvider>
-    <TanStackRouterDevtools />
+    {/* <TanStackRouterDevtools /> */}
   </>
 )
 
