@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Check, MoreVertical, X, Palette, Pencil, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -157,8 +157,12 @@ function TaskCard({
   }) 
 
   return (
-    <div ref={ref}>
-      <Card key={task.id} className='w-80'>
+    <div 
+      ref={ref}
+      data-task-id={task.id}
+      data-project-id={projectId}
+    >
+      <Card className='w-80'>
         <CardContent className='p-4'>
           <p className='font-bold text-lg'>
             {task.name}
@@ -182,6 +186,9 @@ function ProjectCard({
   setShowTaskInput,
   cancelTask,
   addTask,
+  updateProjectColor,
+  updateProjectName,
+  deleteProject,
 }: {
   project: {
     id: string
@@ -205,16 +212,41 @@ function ProjectCard({
       description: string
     },
   ) => void
+  updateProjectColor: (
+    projectId: string,
+    color: string,
+  ) => void
+
+  updateProjectName: (
+    projectId: string,
+    name: string,
+  ) => void
+
+  deleteProject: (
+    projectId: string,
+  ) => void
 }) {
-  // const { ref } = useSortable({
-  //   id: project.id,
-  //   index,
-  //   type: 'project',
-  // })
+  const { ref } = useSortable({
+    id: project.id,
+    index,
+    type: 'project',
+    // disabled: false,
+  })
+
+  const [showColorModal, setShowColorModal] = useState(false)
+  const [selectedColor, setSelectedColor] = useState(project.color)
+  const [showNameModal, setShowNameModal] = useState(false)
+  const [projectName, setProjectName] = useState(project.name)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+
+  useEffect(() => {
+    setSelectedColor(project.color)
+    setProjectName(project.name)
+  }, [project.color, project.name])
 
   return (
     <div
-      // ref={ref}
+      ref={ref}
       className='w-auto shrink-0'
     >
       <div className='flex items-center justify-between'>
@@ -241,15 +273,27 @@ function ProjectCard({
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align='end' sideOffset={8} className='w-52 p-2'>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setShowColorModal(true)}
+            >
               <Palette />
               Edit project color
             </DropdownMenuItem>
-            <DropdownMenuItem>
+
+            <DropdownMenuItem 
+              onClick={() => {
+                setProjectName(project.name)
+                setShowNameModal(true)
+              }}
+            >
               <Pencil />
               Edit project name
             </DropdownMenuItem>
-            <DropdownMenuItem className='text-red-500 focus:text-red-500'>
+
+            <DropdownMenuItem 
+              className='text-red-500 focus:text-red-500'
+              onClick={() => setShowDeleteModal(true)}
+            >
               <Trash2 />
               Delete project
             </DropdownMenuItem>
@@ -257,31 +301,239 @@ function ProjectCard({
         </DropdownMenu>
       </div>
       <div className='mt-4 space-y-3'>
-        {project.tasks.map((task, taskIndex) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            index={taskIndex}
-            projectId={project.id}/>
-        ))}
+        <div className='space-y-3 min-h-10' data-project-id={project.id}>
+          {project.tasks.map((task, taskIndex) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              index={taskIndex}
+              projectId={project.id}/>
+          ))}
 
-        {showTaskInput !== index ? (
-          <button
-          className='mt-4'
-          onClick={() => setShowTaskInput(index)}
-          >
-            + Add New Task
-          </button>
-        ) : (
-          <TaskForm
-            onCreate={(task) => {
-              addTask(project.id, task)
-              setShowTaskInput(null)
-            }}
-            onCancel={cancelTask}
-          />
-        )}
+          {showTaskInput !== index ? (
+            <button
+            className='mt-4'
+            onClick={() => setShowTaskInput(index)}
+            >
+              + Add New Task
+            </button>
+          ) : (
+            <TaskForm
+              onCreate={(task) => {
+                addTask(project.id, task)
+                setShowTaskInput(null)
+              }}
+              onCancel={cancelTask}
+            />
+          )}
+        </div>
       </div>
+
+      {showColorModal && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60'>
+          <div className='w-full max-w-md border-4 border-black bg-background p-6'>
+            <div className='flex items-center justify-between'>
+              <h2 className='text-2xl font-black'>
+                Change Project Color
+              </h2>
+              <Button
+                variant='neutral'
+                size='icon'
+                onClick={()=> setShowColorModal(false)}
+              >
+                <X /> 
+              </Button>
+            </div>
+
+            <div className='mt-6'>
+              <p className='font-bold mb-2'>
+                Current Color
+              </p>
+              <div className='flex items-center gap-3'>
+                <span
+                  className='h-8 w-8 rounded-full border-2 border-black'
+                  style={{backgroundColor: selectedColor}}
+                />
+                <span className='font-bold'>
+                  {selectedColor.toUpperCase()}
+                </span>
+              </div>
+            </div>
+
+            <div className='mt-6'>
+              <label className='font-bold'>
+                Hex Color Code
+              </label>
+              <Input
+                value={selectedColor}
+                onChange={(e) => setSelectedColor(e.target.value)}
+              />
+            </div>
+
+            <div className='mt-6'>
+              <p className='font-bold mb-3'>
+                preset Colors
+              </p>
+              <div className='flex flex-wrap gap-3'>
+                {[
+                  '#8E24AA',
+                  '#22C55E',
+                  '#EF4444',
+                  '#F59E0B',
+                  '#3B82F6',
+                  '#06B6D4',
+                  '#6366F1',
+                  '#14B8A6',
+                  '#F97316',
+                  '#6B7280',
+                ].map((color) => (
+                  <button
+                    key={color}
+                    type='button'
+                    onClick={()=> setSelectedColor(color)}
+                    className='h-9 w-9 rounded-full border-2 border-black'
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className='mt-8 flex justify-end gap-3'>
+              <Button
+                variant='neutral'
+                onClick={() => setShowColorModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  updateProjectColor(project.id, selectedColor)
+                  setShowColorModal(false)
+                }}
+              >
+                Save Color
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showNameModal && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60'>
+          <div className='w-full max-w-md border-4 border-black bg-background p-6'>
+            <div className='flex items-center justify-between'>
+              <h2 className='text-2xl font-black'>
+                Rename Project
+              </h2>
+              <Button 
+                variant='neutral'
+                size='icon'
+                onClick={() => setShowNameModal(false)}
+              >
+                <X />
+              </Button>
+            </div>
+
+            <p className='mt-2  text-muted-foreground'>
+              Choose a new name for this project.
+            </p>
+
+            <div className='mt-6'>
+              <label className='font-bold'>
+                Project Name
+              </label>
+
+              <Input
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder='Project name'
+                className='mt-2'
+              />
+            </div>
+
+            <div className='mt-8 flex justify-end gap-3'>
+              <Button
+                variant='neutral'
+                onClick={() => setShowNameModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!projectName.trim()}
+                onClick={() => {
+                  updateProjectName(project.id, projectName.trim())
+                  setShowNameModal(false)
+                }}
+              >
+                Save Name
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60'>
+          <div className='w-full max-w-md border-4 border-black bg-background p-6'>
+            <div className='flex items-center justify-between'>
+              <h2 className='text-2xl font-black'>
+                Delete Project
+              </h2>
+              <Button 
+                variant='neutral'
+                size='icon'
+                onClick={() => setShowDeleteModal(false)}
+              >
+                <X />
+              </Button>
+            </div>
+
+            <div className='mt-6 border-2 border-orange-500 p-4'>
+              <div className='flex items-start gap-3'>
+                <Trash2 className='mt-1 text-red-500' />
+
+                <div>
+                  <p className='font-bold'>
+                    This action canont be undone!
+                  </p>
+                  <p className='mt-1 text-sm'>
+                    All tasks in this project will be permanently deleted.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className='mt-6'>
+              <p className='text-sm'>
+                This will permanently delete:
+              </p>
+              <p className='mt-2 font-bold'>
+                {project.tasks.length} task
+                {project.tasks.length !== 1 ? 's' : ''} in this project
+              </p>
+            </div>
+
+            <div className='mt-8 flex justify-end gap-3'>
+              <Button
+                variant='neutral'
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </Button>
+
+              <Button
+                className='bg-red-500 hover:bg-red-600'
+                onClick={() => {
+                  deleteProject(project.id)
+                  setShowDeleteModal(false)
+                }}
+              >
+                Delete Project
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -289,7 +541,7 @@ function ProjectCard({
 function RouteComponent() {
   const [showInput, setShowInput] = useState(false)
   const [showTaskInput, setShowTaskInput] = useState<number | null>(null)
-  const { projects, addProject, addTask, reorderTasks, } = useTaskStore()
+  const { projects, addProject, addTask, reorderTasks, reorderProjects, updateProjectColor, updateProjectName, deleteProject, } = useTaskStore()
 
   const cancelCreate = () => {
     setShowInput(false)
@@ -319,15 +571,10 @@ function RouteComponent() {
         if (event.canceled) return
 
         const {source} = event.operation
-        // if (source?.type === 'project') {
-        //   reorderProjects(event)
-        // }
+        if (source?.type === 'project') {
+          reorderProjects(event)
+        }
         if (source?.type === 'task') {
-            console.log('task darg event:', event)
-            console.log('source:', event.operation.source)
-            console.log('target:', event.operation.target)
-            console.log('SOURCE DATA:', event.operation.source?.data)
-            console.log('TARGET DATA:', event.operation.target?.data)
           reorderTasks(event)
         }
       }}
@@ -347,6 +594,9 @@ function RouteComponent() {
             setShowTaskInput={setShowTaskInput}
             cancelTask={cancelTask}
             addTask={addTask}
+            updateProjectColor={updateProjectColor}
+            updateProjectName={updateProjectName}
+            deleteProject={deleteProject}
           />
         ))}
 

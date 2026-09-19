@@ -16,6 +16,9 @@ export type Task = {
 type TaskStore = {
     projects: Project[]
     addProject: (name: string) => void
+    updateProjectColor: (projectId: string, color: string) => void
+    updateProjectName: (projectId: string, name: string) => void
+    deleteProject: (projectId: string) => void
 
     addTask: (
         projectId: string,
@@ -25,6 +28,7 @@ type TaskStore = {
         },
     ) => void
 
+    
     reorderProjects: (event: any) => void
     reorderTasks: (event: any) => void
 }
@@ -43,7 +47,7 @@ export const useTaskStore = create<TaskStore>((set) => ({
             },
         ],
     })),
-
+    
     addTask: (projectId, task) => set((state) => ({
         projects: state.projects.map((project) => 
             project.id === projectId
@@ -59,6 +63,34 @@ export const useTaskStore = create<TaskStore>((set) => ({
                     ],
                 } 
                 : project,
+        ),
+    })),
+
+    updateProjectColor: (projectId, color) => set((state) => ({
+        projects: state.projects.map((project) =>
+            project.id === projectId
+                ? {
+                    ...project,
+                    color,
+                }
+                : project,
+        ),
+    })),
+
+    updateProjectName: (projectId, name) => set((state) => ({
+        projects: state.projects.map((project) =>
+            project.id === projectId
+                ? {
+                    ...project,
+                    name,
+                }
+                : project,
+        ),
+    })),
+
+    deleteProject: (projectId) => set((state) => ({
+        projects: state.projects.filter(
+            (project) => project.id !== projectId,
         ),
     })),
 
@@ -90,6 +122,37 @@ export const useTaskStore = create<TaskStore>((set) => ({
             }
         }
 
-        return state
+        const sourceProject = state.projects.find(
+            (project) => project.id === sourceProjectId,
+        )
+        if (!sourceProject) return state
+
+        const task = sourceProject.tasks.find(
+            (task) => task.id === source.id,
+        )
+        if (!task) return state
+
+        return {
+            projects: state.projects.map((project) => {
+                if ((project.id === sourceProjectId)) {
+                    return {
+                        ...project,
+                        tasks: project.tasks.filter(
+                            (task) => task.id !== source.id,
+                        ),
+                    }
+                }
+                if (project.id === targetProjectId) {
+                    return {
+                        ...project,
+                        tasks: [
+                            ...project.tasks,
+                            task,
+                        ],
+                    }
+                }
+                return project
+            })
+        }
     }),
 }))
