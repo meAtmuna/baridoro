@@ -1,11 +1,14 @@
 import { Button } from '@/components/ui/button';
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider'
+import { supabase } from '@/lib/supabase';
 import { useForm } from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router'
-import { Upload } from 'lucide-react';
+import { TimerResetIcon, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react'
 import { z } from 'zod';
 
@@ -23,12 +26,21 @@ const uploadSchema = z.object({
     )
 })
 
+interface Task {
+  id:string
+  title:string
+  description:string
+  is_completed: boolean
+}
+
 function RouteComponent() {
-  const [selectedMinutes,setSelectedMinutes] = useState<number[]>([30]);
+  const [selectedMinutes,setSelectedMinutes] = useState<number[]>([0.5]);
   const [secondsLeft,setSecondsLeft] = useState<number>(selectedMinutes[0]*60);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [backgroundImage, setBackgroundImage] = useState<string>("/b.jpg");
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
+  
+  // const [tasks, setTasks] = useState<Task |null>(null);
 
   const form = useForm({
     defaultValues: {
@@ -58,11 +70,35 @@ function RouteComponent() {
     }
     else if(secondsLeft === 0){
       setIsRunning(false);
+
+      async function sendCompletedSecondsToDatabase(taskId: string, secondsLeft: number){
+        const {data, error} = await supabase
+          .from("timer_sessions")
+          .insert([
+            {
+              task_id: taskId,
+              duration_seconds: secondsLeft,
+              start_time: new Date().toISOString()
+            }
+          ])
+          .select()
+        
+        if(error) {
+          console.error("Failed to log session:",error.message);
+        } else {
+          console.log("Session recorded successfully:",data);
+        }
+      }
+      // const randomUUID = crypto.randomUUID();
+      sendCompletedSecondsToDatabase("288abb51-e5aa-4870-8918-2f51f56b398a",selectedMinutes[0]*60)
     }
     return () => {
       if(timer) clearTimeout(timer);
     }
-  }, [isRunning,secondsLeft])
+
+
+
+  }, [isRunning,secondsLeft,selectedMinutes])
 
   const handleSliderChange = (newValues: readonly number[] | number) => {
     if(!isRunning){
@@ -82,6 +118,12 @@ function RouteComponent() {
     setIsRunning(!isRunning);
   }
 
+  const resetTimer = () => {
+    setIsRunning(false);
+    // setSelectedMinutes([selectedMinutes[0]+10]);
+    setSecondsLeft(selectedMinutes[0] * 60);
+  }
+
   return (
     <div className="font-base min-h-screen w-full bg-cover bg-center bg-no-repeat bg-[url('/b.jpg')] flex flex-col justify-between p-8" style={{ backgroundImage: `url('${backgroundImage}')` }}>
       <div className="h-10" />
@@ -90,14 +132,74 @@ function RouteComponent() {
           <h2 className="text-white text-9xl">{formatTime(secondsLeft)}</h2>
         </div>
         <div className="w-full">
-          <Slider defaultValue={selectedMinutes} value={[Math.ceil(secondsLeft / 60)]} onValueChange={handleSliderChange} max={120} step={1}  />
+          <Slider defaultValue={selectedMinutes} value={[Math.ceil(secondsLeft / 60)]} onValueChange={handleSliderChange} max={120} step={5}  />
         </div>
-        <Button  onClick={toggleTimer}>{isRunning ? "Pause" : "Start"}</Button>
+        <div className='flex gap-4'>
+          <Button className="hover:cursor-pointer"  onClick={toggleTimer}>{isRunning ? "Pause" : "Start"}</Button>
+          <Button className="hover:cursor-pointer" onClick={resetTimer} variant="neutral"><TimerResetIcon></TimerResetIcon></Button>
+        </div>
+        <div>
+          {/* <Card className="--card-spacing:--spacing(4) hover:cursor-pointer hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none"> */}
+            {/* <CardHeader>
+              <CardTitle>Login to your account</CardTitle>
+              <CardDescription>
+                Enter your email below to login to your account
+              </CardDescription>
+              <CardAction>
+                <a href="#" className="text-sm underline-offset-4 hover:underline">
+                  Sign Up
+                </a>
+              </CardAction>
+            </CardHeader> */}
+            {/* <CardContent>
+              <h1>blah blah blah no project</h1>
+            </CardContent> */}
+            {/* <CardFooter className="flex-col gap-2">
+              <Button type="submit" className="w-full">
+                Login
+              </Button>
+            </CardFooter> */}
+          {/* </Card> */}
+        </div>
+        <div className="-mt-10">
+          <Drawer modal={false}  swipeDirection="right">
+            <DrawerTrigger render={
+              <Card className="--card-spacing:--spacing(4) hover:cursor-pointer hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none">
+                {/* <CardHeader>
+                  <CardTitle>Login to your account</CardTitle>
+                  <CardDescription>
+                    Enter your email below to login to your account
+                  </CardDescription>
+                  <CardAction>
+                    <a href="#" className="text-sm underline-offset-4 hover:underline">
+                      Sign Up
+                    </a>
+                  </CardAction>
+                </CardHeader> */}
+                <CardContent>
+                  <h1>blah blah blah no project</h1>
+                </CardContent>
+                {/* <CardFooter className="flex-col gap-2">
+                  <Button type="submit" className="w-full">
+                    Login
+                  </Button>
+                </CardFooter> */}
+              </Card>
+            }>
+              Non Modal
+            </DrawerTrigger>
+            <DrawerContent className="!top-1/2 !-translate-y-1/2 !h-[90vh] border-2 border-solid border-black ring-inset shadow-shadow border-border box-border">
+              <DrawerHeader>
+                <DrawerTitle>Non Modal Drawer</DrawerTitle>
+              </DrawerHeader>
+              <div className="flex-1 p-4">
+                <div className="rounded-base bg-secondary-background group-data-[swipe-axis=x]/drawer-popup:size-full group-data-[swipe-axis=y]/drawer-popup:h-80 group-data-[swipe-axis=y]/drawer-popup:w-full" />
+              </div>
+            </DrawerContent>
+          </Drawer>
+        </div>
       </div>
       <div className="flex justify-start items-center w-full">
-        {/* <Button variant={"white"} size={"xs"} onChange={handleUploadBtnChange}><Upload/></Button> */}
-        {/* <Label htmlFor="picture">Picture</Label>
-        <Input id="picture" type="file" /> */}
          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger render={<Button  size={"xs"} className="hover:cursor-pointer"><Upload/></Button>}></DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
