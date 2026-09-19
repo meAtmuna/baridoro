@@ -89,7 +89,7 @@ function RouteComponent() {
           console.log("Session recorded successfully:",data);
         }
       }
-      // const randomUUID = crypto.randomUUID();
+
       sendCompletedSecondsToDatabase("288abb51-e5aa-4870-8918-2f51f56b398a",selectedMinutes[0]*60)
     }
     return () => {
@@ -120,7 +120,6 @@ function RouteComponent() {
 
   const resetTimer = () => {
     setIsRunning(false);
-    // setSelectedMinutes([selectedMinutes[0]+10]);
     setSecondsLeft(selectedMinutes[0] * 60);
   }
 
@@ -139,51 +138,20 @@ function RouteComponent() {
           <Button className="hover:cursor-pointer" onClick={resetTimer} variant="neutral"><TimerResetIcon></TimerResetIcon></Button>
         </div>
         <div>
-          {/* <Card className="--card-spacing:--spacing(4) hover:cursor-pointer hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none"> */}
-            {/* <CardHeader>
-              <CardTitle>Login to your account</CardTitle>
-              <CardDescription>
-                Enter your email below to login to your account
-              </CardDescription>
-              <CardAction>
-                <a href="#" className="text-sm underline-offset-4 hover:underline">
-                  Sign Up
-                </a>
-              </CardAction>
-            </CardHeader> */}
-            {/* <CardContent>
-              <h1>blah blah blah no project</h1>
-            </CardContent> */}
-            {/* <CardFooter className="flex-col gap-2">
-              <Button type="submit" className="w-full">
-                Login
-              </Button>
-            </CardFooter> */}
-          {/* </Card> */}
         </div>
         <div className="-mt-10">
           <Drawer modal={false}  swipeDirection="right">
             <DrawerTrigger render={
-              <Card className="--card-spacing:--spacing(4) hover:cursor-pointer hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none">
-                {/* <CardHeader>
-                  <CardTitle>Login to your account</CardTitle>
-                  <CardDescription>
-                    Enter your email below to login to your account
-                  </CardDescription>
-                  <CardAction>
-                    <a href="#" className="text-sm underline-offset-4 hover:underline">
-                      Sign Up
-                    </a>
-                  </CardAction>
-                </CardHeader> */}
+              <Card className="[--card-spacing:--spacing(4)] hover:cursor-pointer hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none">
                 <CardContent>
-                  <h1>blah blah blah no project</h1>
+                  <div className="flex  gap-64 whitespace-nowrap">
+                    <div>
+                      <h6>{isRunning? "baridoro" : "select a task"}</h6>
+                      <p>{isRunning?"Project: thridspace": "no project selected"}</p>
+                    </div>
+                    <p className="self-end">{isRunning?"Time:1h 30m": "0h 0m"}</p>
+                  </div>
                 </CardContent>
-                {/* <CardFooter className="flex-col gap-2">
-                  <Button type="submit" className="w-full">
-                    Login
-                  </Button>
-                </CardFooter> */}
               </Card>
             }>
               Non Modal
