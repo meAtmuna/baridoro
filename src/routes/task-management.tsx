@@ -1,13 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, MoreVertical, X, Palette, Pencil, Trash2, PlusIcon } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useTaskStore } from '@/store/task-store'
-import { DragDropProvider} from '@dnd-kit/react'
+import { DragDropProvider, useDroppable} from '@dnd-kit/react'
 import { TaskCard, TaskForm } from '@/components/task'
 
 export const Route = createFileRoute('/task-management')({
@@ -60,8 +60,8 @@ function ProjectCard({
       // ref={ref}
       className='w-auto shrink-0'
     >
-      <div className='flex items-center justify-between gap-44'>
-        <div className='flex items-center gap-3'>
+      <div className={'flex items-center justify-between min-w-[300px]'}>
+        <div className='flex items-center gap-3 flex-1 min-w-0'>
           <span 
             className='h-3 w-3 rounded-full'
             style={{backgroundColor: project.color}}
@@ -131,8 +131,12 @@ function ProjectCard({
 function RouteComponent() {
   const [showInput, setShowInput] = useState(false)
   const [showTaskInput, setShowTaskInput] = useState<number | null>(null)
-  const { projects, addProject, addTask, reorderTasks, } = useTaskStore()
+  const { projects,fetchProjects, addProject, addTask, reorderTasks, } = useTaskStore()
 
+  useEffect(() => {
+    fetchProjects();
+  },[fetchProjects])
+  
   const cancelCreate = () => {
     setShowInput(false)
   }
@@ -194,7 +198,7 @@ function RouteComponent() {
 
         <div className='w-auto shrink-0'>
         {!showInput ? (
-          <Button onClick={() => setShowInput(true)}>
+          <Button onClick={() => setShowInput(true)} className="hover:cursor-pointer">
             Create New Project
           </Button>
         ) : (
@@ -222,6 +226,7 @@ function RouteComponent() {
                     size="icon"
                     variant='neutral'
                     onClick={cancelCreate}
+                    className="hover:cursor-pointer"
                   >
                       <X />
                   </Button>
@@ -230,6 +235,7 @@ function RouteComponent() {
                     <Button
                       type='submit'
                       size="icon"
+                      className="hover:cursor-pointer"
                     >
                         <Check />
                     </Button>

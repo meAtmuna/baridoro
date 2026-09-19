@@ -137,11 +137,11 @@ export function TaskCard({
     data: {
       projectId,
     }
-  }) 
+  })
 
   return (
     <div ref={ref}>
-      <Card key={task.id} className='w-80 !shadow-none border-2   border-border !p-0 hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:!shadow-shadow cursor-pointer'>
+      <Card key={task.id} className='w-80 !shadow-none border-2  w-full border-border !p-0 hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:!shadow-shadow cursor-pointer'>
         <CardContent className='p-4'>
           <p className='font-bold text-lg'>
             {task.name}
