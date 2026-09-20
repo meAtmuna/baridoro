@@ -44,46 +44,6 @@ type TaskStore = {
 export const useTaskStore = create<TaskStore>((set) => ({
     projects: [], 
     setProjects: (projects) => set({ projects }),
-    addProject: (name) => set((state) => ({
-        projects: [
-            ...state.projects,
-            {
-                id: crypto.randomUUID(),
-                name,
-                color: '#ef4444',
-                tasks: [],
-            },
-        ],
-    })),
-    
-    addTask: (projectId, task) => set((state) => ({
-        projects: state.projects.map((project) => 
-            project.id === projectId
-                ? {
-                    ...project,
-                    tasks: [
-                        ...project.tasks,
-                        {
-                            id: crypto.randomUUID(),
-                            name: task.name,
-                            description: task.description,
-                            date: task.date,
-                            completed: false,
-                        },
-                    ],
-                } 
-                : project,
-        ),
-    })),
-
-    fetchProjects: async () => {
-        const {data,error} = await supabase.from("projects").select("*, tasks(*)");
-        if(error) {
-            console.error("Error fetching projects:", error);
-            return;
-        }
-        if(data) set({projects: data});
-    },
 
     addProject: async (name) => {
         const randomColor = '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
@@ -105,6 +65,18 @@ export const useTaskStore = create<TaskStore>((set) => ({
             }))
         }
     },
+    
+    // addProject: (name) => set((state) => ({
+    //     projects: [
+    //         ...state.projects,
+    //         {
+    //             id: crypto.randomUUID(),
+    //             name,
+    //             color: '#ef4444',
+    //             tasks: [],
+    //         },
+    //     ],
+    // })),
 
     addTask: async (projectId, task) => { 
         const {data,error} = await supabase.from("tasks").insert([{project_id:projectId,name:task.name,description:task.description}]).select().single();
@@ -123,6 +95,35 @@ export const useTaskStore = create<TaskStore>((set) => ({
                 ),
             }))
         }
+    },
+    
+    // addTask: (projectId, task) => set((state) => ({
+    //     projects: state.projects.map((project) => 
+    //         project.id === projectId
+    //             ? {
+    //                 ...project,
+    //                 tasks: [
+    //                     ...project.tasks,
+    //                     {
+    //                         id: crypto.randomUUID(),
+    //                         name: task.name,
+    //                         description: task.description,
+    //                         date: task.date,
+    //                         completed: false,
+    //                     },
+    //                 ],
+    //             } 
+    //             : project,
+    //     ),
+    // })),
+
+    fetchProjects: async () => {
+        const {data,error} = await supabase.from("projects").select("*, tasks(*)");
+        if(error) {
+            console.error("Error fetching projects:", error);
+            return;
+        }
+        if(data) set({projects: data});
     },
 
     toggleTask: (projectId, taskId) => set((state) => ({

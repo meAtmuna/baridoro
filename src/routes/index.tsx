@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider'
 import { supabase } from '@/lib/supabase';
+import { useTaskStore } from '@/store/task-store';
 import { useForm } from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router'
 import { FolderIcon, PlusIcon, TimerResetIcon, Upload } from 'lucide-react';
@@ -34,9 +35,12 @@ function RouteComponent() {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [backgroundImage, setBackgroundImage] = useState<string>("/b.jpg");
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [showTaskForm, setShowTaskForm] = useState<boolean>(false);
+  const [showTaskForm, setShowTaskForm] = useState<number | null>(null);
+    const { projects,fetchProjects, addProject, addTask, reorderTasks, } = useTaskStore()
   
-  // const [tasks, setTasks] = useState<Task |null>(null);
+    useEffect(() => {
+      fetchProjects();
+    },[fetchProjects])
 
   const form = useForm({
     defaultValues: {
@@ -120,7 +124,7 @@ function RouteComponent() {
   }
 
   const cancelTask = () => {
-    setShowTaskForm(false);
+    setShowTaskForm(null);
   }
 
   return (
@@ -161,37 +165,9 @@ function RouteComponent() {
                 <DrawerTitle>Task List</DrawerTitle>
               </DrawerHeader>
               <div className="flex-1 p-4">
-                <div className="flex items-center justify-center p-6 min-h-[inherit] rounded-base border-border border-solid border-2 bg-secondary-background group-data-[swipe-axis=x]/drawer-popup:size-full group-data-[swipe-axis=y]/drawer-popup:h-80 group-data-[swipe-axis=y]/drawer-popup:w-full" >
+                <div className="flex items-center flex-col justify-center gap-4 min-h-[inherit] rounded-base " >
                   {
-                  showTaskForm ?
-                    <div className="self-start mt-0 flex flex-col gap-2">
-                      <TaskCard
-                        key={"asdf"}
-                        task={{id:"1",name:"asdf",description:"asdf"}}
-                        index={1}
-                        projectId={"1"}
-                      />
-                      <TaskCard
-                        key={"asdf"}
-                        task={{id:"1",name:"asdf",description:"asdf"}}
-                        index={1}
-                        projectId={"1"}
-                      />
-                      <TaskCard
-                        key={"asdf"}
-                        task={{id:"1",name:"asdf",description:"asdf"}}
-                        index={1}
-                        projectId={"1"}
-                      />
-                      <TaskForm
-                        onCreate={(task) => {
-                          // addTask(project.id, task)
-                          setShowTaskForm(false);
-                        }}
-                        onCancel={cancelTask}
-                      /> 
-                    </div>
-                    :
+                    projects.length === 0 ? (
                     <Empty className="max-w-md w-full border-border border-dashed rounded-base bg-secondary-background group-data-[swipe-axis=x]/drawer-popup:size-full group-data-[swipe-axis=y]/drawer-popup:h-80 group-data-[swipe-axis=y]/drawer-popup:w-full">
                       <EmptyHeader>
                         <EmptyMedia variant="icon">
@@ -203,13 +179,61 @@ function RouteComponent() {
                         </EmptyDescription>
                       </EmptyHeader>
                       <EmptyContent>
-                        <Button size="sm" className="hover:cursor-pointer" onClick={() => setShowTaskForm(true)}>
+                        <Button size="sm" className="hover:cursor-pointer" onClick={() => setShowTaskForm(1)}>
                           <PlusIcon />
                           Create Task
                         </Button>
                       </EmptyContent>
                     </Empty>
-                  }
+                    ) :
+                  projects.map((project,index) => (
+                  // {
+                  project &&
+                  <div className="self-start mt-0 flex flex-col gap-2">
+                        <div className='flex flex-col  min-w-[348px] w-full gap-2 p-4 border-border border-solid border-2 bg-secondary-background group-data-[swipe-axis=x]/drawer-popup:size-full group-data-[swipe-axis=y]/drawer-popup:h-80 group-data-[swipe-axis=y]/drawer-popup:w-full'>
+                          <div className='flex items-center gap-3 flex-1 min-w-0'>
+                            <span 
+                              className='h-3 w-3 rounded-full'
+                              style={{backgroundColor: project.color}}
+                            />
+                            <h1 className='font-bold text-xl'>
+                              {project.name}
+                            </h1>
+                            <span className='rounded-full bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400'>
+                              {project.tasks.length}
+                            </span>
+                          </div>
+                          {project.tasks.map((task, taskIndex) => (
+                            <TaskCard
+                              key={task.id}
+                              task={task}
+                              index={taskIndex}
+                              projectId={project.id} 
+                              dragDisabled={false} 
+                              toggleTask={function (projectId: string, taskId: string): void {
+                                throw new Error('Function not implemented.');
+                              }} 
+                              deleteTask={function (projectId: string, taskId: string): void {
+                                throw new Error('Function not implemented.');
+                              }}/>
+                          ))}
+                          { showTaskForm === index ? 
+                            <TaskForm
+                              onCreate={(task) => {
+                                addTask(project.id, task)
+                                setShowTaskForm(null);
+                              }}
+                              onCancel={cancelTask}
+                            />
+                            :
+                            <Button size="sm"  className="hover:cursor-pointer w-full" onClick={() => setShowTaskForm(index)} variant="neutral">
+                              <PlusIcon />
+                              Add Task
+                            </Button>
+                          }
+                        </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </DrawerContent>
