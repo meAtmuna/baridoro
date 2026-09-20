@@ -1,6 +1,6 @@
 import { useForm } from "@tanstack/react-form";
 import z from "zod";
-import { Field, FieldError, FieldLabel } from "./ui/field";
+import { Field, FieldError } from "./ui/field";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { CalendarDays, Check, Trash2, X } from "lucide-react";
@@ -328,16 +328,16 @@ export function TaskCard({
       data-project-id={projectId}
       onClick={onClick}
     >
-      <Card className={`${task.completed ? 'opacity-60' : ''} w-80 !shadow-none border-2  w-full border-border !p-0 hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:!shadow-shadow cursor-pointer`}>
+      <Card className={`${task.completed ? 'opacity-60' : ''} !shadow-none border-2  w-full border-border !p-0 hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:!shadow-shadow cursor-pointer`}>
         <CardContent className='p-3'>
           <div className='flex items-start justify-between gap-2'>
             <div className='min-w-0'>
-              <p className={`font-bold text-sm break-words ${task.completed ? 'line-through opacity-60' : ''}`}>
+              <p className={`font-bold text-sm wrap-break-word ${task.completed ? 'line-through opacity-60' : ''}`}>
                 {task.name}
               </p>
 
               {task.description && (
-                <p className={`text-xs mt-1 break-words ${task.completed ? 'line-through opacity-60' : ''}`}>
+                <p className={`text-xs mt-1 wrap-break-word ${task.completed ? 'line-through opacity-60' : ''}`}>
                   {task.description}
                 </p>
               )}
