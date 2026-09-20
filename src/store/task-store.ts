@@ -41,7 +41,7 @@ type TaskStore = {
     reorderTasks: (event: any) => void
 }
 
-export const useTaskStore = create<TaskStore>((set) => ({
+export const useTaskStore = create<TaskStore>((set,get) => ({
     projects: [], 
     setProjects: (projects) => set({ projects }),
 
@@ -126,131 +126,149 @@ export const useTaskStore = create<TaskStore>((set) => ({
         if(data) set({projects: data});
     },
 
-    toggleTask: (projectId, taskId) => set((state) => ({
-        projects: state.projects.map((project) =>
-            project.id === projectId
-                ? {
-                    ...project,
-                    tasks: project.tasks.map((task) =>
-                        task.id === taskId
-                            ? { ...task, completed: !task.completed }
-                            : task,
-                    ),
-                }
-                : project,
-        ),
-    })),
+    toggleTask: async (projectId, taskId) => {
+        const project = get().projects.find((p) => p.id === projectId);
+        const task = project?.tasks.find((t) => t.id === taskId);
 
-    deleteTask: (projectId, taskId) => set((state) => ({
-        projects: state.projects.map((project) =>
-            project.id === projectId
-                ? {
-                    ...project,
-                    tasks: project.tasks.filter((task) => task.id !== taskId),
-                }
-                : project,
-        ),
-    })),
+        if(!task) return;
 
-    updateProjectColor: (projectId, color) => set((state) => ({
-        projects: state.projects.map((project) =>
-            project.id === projectId
-                ? {
-                    ...project,
-                    color,
-                }
-                : project,
-        ),
-    })),
+        const nextStatus = !task.completed;
 
-    updateProjectName: (projectId, name) => set((state) => ({
-        projects: state.projects.map((project) =>
-            project.id === projectId
-                ? {
-                    ...project,
-                    name,
-                }
-                : project,
-        ),
-    })),
+        const {error} = await supabase.from("tasks").update({is_completed:nextStatus}).eq("id",taskId);
 
-    deleteProject: (projectId) => set((state) => ({
-        projects: state.projects.filter(
-            (project) => project.id !== projectId,
-        ),
-    })),
+        if(error){
+            console.error("Error changing task completed status:",error);
+        }
+        set((state) => ({
+            projects: state.projects.map((project) =>
+                project.id === projectId
+                    ? {
+                        ...project,
+                        tasks: project.tasks.map((task) =>
+                            task.id === taskId
+                                ? { ...task, completed: !task.completed }
+                                : task,
+                        ),
+                    }
+                    : project,
+            ),
+        }))
+    },
+        
+
+    deleteTask: async (projectId, taskId) => {
+        const {error} = await supabase.from("tasks").delete().eq("id",taskId);
+        
+        if(error) { 
+            console.error("Error deleting task:",error);
+            return;
+        }
+
+        set((state) => ({
+            projects: state.projects.map((project) =>
+                project.id === projectId
+                    ? {
+                        ...project,
+                        tasks: project.tasks.filter((task) => task.id !== taskId),
+                    }
+                    : project,
+            ),
+        }))
+    },
+        
+
+    updateProjectColor: async (projectId, color) => {
+        const {error} = await supabase.from("projects").update({color:color}).eq("id",projectId);
+
+        if(error){
+            console.error("Error changing updating project color:",error);
+        }
+
+        set((state) => ({
+            projects: state.projects.map((project) =>
+                project.id === projectId
+                    ? {
+                        ...project,
+                        color,
+                    }
+                    : project,
+            ),
+        }))
+    },
+    
+
+    updateProjectName: async (projectId, name) => {
+        const {error} = await supabase.from("projects").update({name:name}).eq("id",projectId);
+
+        if(error){
+            console.error("Error changing updating project name:",error);
+        }
+
+        set((state) => ({
+            projects: state.projects.map((project) =>
+                project.id === projectId
+                    ? {
+                        ...project,
+                        name,
+                    }
+                    : project,
+            ),
+        }))
+    },
+
+    deleteProject: async (projectId) => {
+        const {error} = await supabase.from("projects").delete().eq("id",projectId);
+
+        if(error) {
+            console.error("Error deleting project",error);
+            return;
+        }
+
+        set((state) => ({
+            projects: state.projects.filter(
+                (project) => project.id !== projectId,
+            ),
+        })) 
+    },
 
     reorderProjects: (event) => set((state) => ({
         projects: move(state.projects, event),
     })),
 
-    reorderTasks: (event) => set((state) => {
-        const record = Object.fromEntries(
-            state.projects.map((p) => [p.id, p.tasks]),
-        )
+    reorderTasks: async (event) => {
+        const source = event.operation.source;
+        const target = event.operation.target;
 
-        const next = move(record, event)
+        if(!source || !target) return;
 
-        return {
-            projects: state.projects.map((p) => ({
-                ...p,
-                tasks: next[p.id] ?? p.tasks,
-            })),
+        const sourceTaskId = source.id;
+        const sourceProjectId = source.data?.projectId;
+
+        const targetProjectId = target.data?.projectId || target.id;
+
+        if(!sourceProjectId || !targetProjectId) return;
+
+        set((state) => {
+            const record = Object.fromEntries(
+                state.projects.map((p) => [p.id, p.tasks]),
+            )
+
+            const next = move(record, event)
+
+            return {
+                projects: state.projects.map((p) => ({
+                    ...p,
+                    tasks: next[p.id] ?? p.tasks,
+                })),
+            }
+        })
+
+        if(sourceProjectId !== targetProjectId) {
+            const {error} = await supabase.from("tasks").update({project_id: targetProjectId}).eq("id",sourceTaskId);
+
+            if(error) {
+                console.error("Error updating tasks project in supabase:",error);
+            }
         }
-        // const source = event.operation.source
-        // const target = event.operation.target
-
-        // if (!source || !target) return state 
-        
-        // const sourceProjectId = source.data?.projectId
-        // const targetProjectId = target.data?.projectId
-
-        // if (!sourceProjectId || !targetProjectId) return state
-
-        // if (sourceProjectId === targetProjectId) {
-        //     return {
-        //         projects: state.projects.map((project) => 
-        //             project.id === sourceProjectId
-        //                 ? {
-        //                     ...project,
-        //                     tasks: move(project.tasks, event)
-        //                 }
-        //                 :project,
-        //         ),
-        //     }
-        // }
-
-        // const sourceProject = state.projects.find(
-        //     (project) => project.id === sourceProjectId,
-        // )
-        // if (!sourceProject) return state
-
-        // const task = sourceProject.tasks.find(
-        //     (task) => task.id === source.id,
-        // )
-        // if (!task) return state
-
-        // return {
-        //     projects: state.projects.map((project) => {
-        //         if ((project.id === sourceProjectId)) {
-        //             return {
-        //                 ...project,
-        //                 tasks: project.tasks.filter(
-        //                     (task) => task.id !== source.id,
-        //                 ),
-        //             }
-        //         }
-        //         if (project.id === targetProjectId) {
-        //             return {
-        //                 ...project,
-        //                 tasks: [
-        //                     ...project.tasks,
-        //                     task,
-        //                 ],
-        //             }
-        //         }
-        //         return project
-        //     })
-        // }
-    }),
+    },
 }))
