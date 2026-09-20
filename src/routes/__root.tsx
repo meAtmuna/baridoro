@@ -3,7 +3,7 @@ import AuthForm from '@/components/auth-form'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { supabase } from '@/lib/supabase'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+// import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import { useEffect, useState } from 'react'
 
 const RootLayout = () => {

@@ -1,4 +1,3 @@
-import AuthForm from '@/components/auth-form';
 import { TaskCard, TaskForm } from '@/components/task';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

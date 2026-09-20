@@ -108,7 +108,7 @@ function ProjectCard({
       ref={ref}
       className={hideProject ? 'hidden' : 'w-auto shrink-0'}
     >
-      <div className={'flex items-center justify-between min-w-[300px]'}>
+      <div className={'flex items-center justify-between min-w-75'}>
         <div ref={handleRef} className='flex items-center flex-1 cursor-grab gap-3 min-w-0'>
           <span 
             className='h-3 w-3 rounded-full'
@@ -355,7 +355,7 @@ function ProjectCard({
 
                 <div>
                   <p className='font-bold'>
-                    This action canont be undone!
+                    This action can not be undone!
                   </p>
                   <p className='mt-1 text-sm'>
                     All tasks in this project will be permanently deleted.
