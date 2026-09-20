@@ -114,7 +114,7 @@ function RouteComponent() {
     if(isRunning && secondsLeft > 0){
       timer = setTimeout(() => {
         setSecondsLeft((prev) => prev -1);
-      }, 1);
+      }, 1000);
     }
     else if(secondsLeft === 0 && isRunning){
       setIsRunning(false);
