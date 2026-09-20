@@ -39,11 +39,19 @@ function RouteComponent() {
   const [selectedTask, setSelectedTask] = useState<{taskName: string; projectName: string} | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>();
   const [totalTaskSeconds, setTotalTaskSeconds] = useState<number>(0);
-    const { projects,fetchProjects, addProject, addTask, reorderTasks, } = useTaskStore()
+    const { projects,fetchProjects, addTask, reorderTasks,toggleTask,deleteTask } = useTaskStore()
   
     useEffect(() => {
       fetchProjects();
     },[fetchProjects])
+
+    useEffect(() => {
+      if(isRunning){
+        document.title = `(${formatTime(secondsLeft)}) Baridoro Timer`
+      } else {
+        document.title = "Baridoro Timer";
+      }
+    },[isRunning,secondsLeft]);
 
   const form = useForm({
     defaultValues: {
@@ -194,7 +202,7 @@ function RouteComponent() {
               <DrawerHeader  className="pb-0">
                 <DrawerTitle>Task List</DrawerTitle>
               </DrawerHeader>
-              <div className="flex-1 p-4">
+              <div className="overflow-y-auto flex-1 p-4">
                 <div className="flex items-center flex-col justify-center gap-4 min-h-[inherit] rounded-base " >
                   {
                     projects.length === 0 ? (
@@ -217,10 +225,9 @@ function RouteComponent() {
                     </Empty>
                     ) :
                   projects.map((project,index) => (
-                  // {
                   project &&
-                  <div className="self-start mt-0 flex flex-col gap-2">
-                        <div className='flex flex-col  min-w-[348px] w-full gap-2 p-4 border-border border-solid border-2 bg-secondary-background group-data-[swipe-axis=x]/drawer-popup:size-full group-data-[swipe-axis=y]/drawer-popup:h-80 group-data-[swipe-axis=y]/drawer-popup:w-full'>
+                  <div className="self-start mt-0 flex flex-col gap-2 mr-4">
+                        <div className='flex flex-col  min-w-[336px] w-full gap-2 p-4 border-border border-solid border-2 bg-secondary-background group-data-[swipe-axis=x]/drawer-popup:size-full group-data-[swipe-axis=y]/drawer-popup:h-80 group-data-[swipe-axis=y]/drawer-popup:w-full'>
                           <div className='flex items-center gap-3 flex-1 min-w-0'>
                             <span 
                               className='h-3 w-3 rounded-full'
@@ -241,12 +248,8 @@ function RouteComponent() {
                               projectId={project.id} 
                               dragDisabled={false} 
                               onClick={() => {setSelectedTask({ taskName: task.name, projectName: project.name }); setSelectedTaskId(task.id)}}
-                              toggleTask={function (projectId: string, taskId: string): void {
-                                throw new Error('Function not implemented.');
-                              }} 
-                              deleteTask={function (projectId: string, taskId: string): void {
-                                throw new Error('Function not implemented.');
-                              }}
+                              toggleTask={toggleTask}
+                              deleteTask={deleteTask}
                               />
                           ))}
                           { showTaskForm === index ? 

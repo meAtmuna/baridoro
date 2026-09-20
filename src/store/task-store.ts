@@ -134,7 +134,7 @@ export const useTaskStore = create<TaskStore>((set,get) => ({
 
         const nextStatus = !task.completed;
 
-        const {error} = await supabase.from("tasks").update({is_completed:nextStatus}).eq("id",taskId);
+        const {error} = await supabase.from("tasks").update({completed:nextStatus}).eq("id",taskId);
 
         if(error){
             console.error("Error changing task completed status:",error);
