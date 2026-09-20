@@ -40,12 +40,28 @@ function RouteComponent() {
   const [selectedTask, setSelectedTask] = useState<{taskName: string; projectName: string} | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>();
   const [totalTaskSeconds, setTotalTaskSeconds] = useState<number>(0);
+  const [grandTotalSeconds, setGrandTotalSeconds] = useState<number | undefined>(0);
   const [isFullScreen,setIsFullScreen] = useState(false);
-  const { projects,fetchProjects, addTask, reorderTasks,toggleTask,deleteTask } = useTaskStore()
+  const { projects,fetchProjects, addTask,toggleTask,deleteTask } = useTaskStore()
 
   useEffect(() => {
     fetchProjects();
   },[fetchProjects])
+
+  useEffect(()=>{
+    async function fetchGrandTotalTimeLogged() {
+      const {data,error} = await supabase.from("timer_sessions").select("duration_seconds");
+
+      if(error){
+        console.error("Failed to fetch grand total time:",error);
+      }
+
+      const total = data?.reduce((acc,session) => acc + session.duration_seconds, 0);
+      setGrandTotalSeconds(total);
+    }
+
+    fetchGrandTotalTimeLogged();
+  }, [isRunning]);
   
   useEffect(() => {
     const handleFullScreenChange = () => {
@@ -228,6 +244,9 @@ function RouteComponent() {
             <DrawerContent className="!top-1/2 !-translate-y-1/2 !h-[90vh] border-2 border-solid border-black ring-inset shadow-shadow border-border box-border">
               <DrawerHeader  className="pb-0">
                 <DrawerTitle>Task List</DrawerTitle>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total time spent across all tasks: <span className="font-bold text-foreground">{formatDuration(grandTotalSeconds)}</span>
+                </p>
               </DrawerHeader>
               <div className="overflow-y-auto flex-1 p-4">
                 <div className="flex items-center flex-col justify-center gap-4 min-h-[inherit] rounded-base " >
