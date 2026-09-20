@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { useTaskStore } from '@/store/task-store';
 import { useForm } from '@tanstack/react-form';
 import { createFileRoute } from '@tanstack/react-router'
-import { FolderIcon, PlusIcon, TimerResetIcon, Upload } from 'lucide-react';
+import { FolderIcon, Maximize, Minimize, PlusIcon, TimerResetIcon, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react'
 import { z } from 'zod';
 
@@ -40,11 +40,21 @@ function RouteComponent() {
   const [selectedTask, setSelectedTask] = useState<{taskName: string; projectName: string} | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>();
   const [totalTaskSeconds, setTotalTaskSeconds] = useState<number>(0);
+  const [isFullScreen,setIsFullScreen] = useState(false);
   const { projects,fetchProjects, addTask, reorderTasks,toggleTask,deleteTask } = useTaskStore()
 
   useEffect(() => {
     fetchProjects();
   },[fetchProjects])
+  
+  useEffect(() => {
+    const handleFullScreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    }
+
+    document.addEventListener("fullscreenchange",handleFullScreenChange);
+    return () => document.removeEventListener("fullscreenchange",handleFullScreenChange);
+  },[])
 
   useEffect(() => {
     if(isRunning){
@@ -157,6 +167,18 @@ function RouteComponent() {
     setIsRunning(!isRunning);
   }
 
+  const toggleFullScreen = () => {
+    if(!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch((err) => {
+        console.error(`Error going into full screen: ${err.message}`);
+      });
+    } else {
+      if(document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  }
+
   const resetTimer = () => {
     setIsRunning(false);
     setSecondsLeft(selectedMinutes[0] * 60);
@@ -170,6 +192,10 @@ function RouteComponent() {
     <div className="font-base min-h-screen w-full bg-cover bg-center bg-no-repeat bg-[url('/b.jpg')] flex flex-col justify-between p-8" style={{ backgroundImage: `url('${backgroundImage}')` }}>
       <div className="h-10" />
       <div className="flex flex-col items-center justify-center gap-8 max-w-md w-full mx-auto">
+        <Button variant={"neutral"} size={"xs"} className={"hover:cursor-pointer flex items-center gap-1"} onClick={toggleFullScreen} title={isFullScreen? "Exit Fullscreen":"Go Fullscreen"}>
+          {isFullScreen ? <Minimize className='h-3 w-3'/> : <Maximize className='h-3 w-3' />}
+          {isFullScreen ? "Exit":"Fullscreen"}
+        </Button>
         <div>
           <h2 className="text-white text-9xl">{formatTime(secondsLeft)}</h2>
         </div>
