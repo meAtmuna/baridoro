@@ -30,12 +30,15 @@ const uploadSchema = z.object({
 })
 
 function RouteComponent() {
-  const [selectedMinutes,setSelectedMinutes] = useState<number[]>([0.5]);
+  const [selectedMinutes,setSelectedMinutes] = useState<number[]>([0.2]);
   const [secondsLeft,setSecondsLeft] = useState<number>(selectedMinutes[0]*60);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [backgroundImage, setBackgroundImage] = useState<string>("/b.jpg");
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [showTaskForm, setShowTaskForm] = useState<number | null>(null);
+  const [selectedTask, setSelectedTask] = useState<{taskName: string; projectName: string} | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>();
+  const [totalTaskSeconds, setTotalTaskSeconds] = useState<number>(0);
     const { projects,fetchProjects, addProject, addTask, reorderTasks, } = useTaskStore()
   
     useEffect(() => {
@@ -60,15 +63,26 @@ function RouteComponent() {
     }
   })
 
+  async function fetchTotalTimeForTask(taskId:string){
+      const {data,error} = await supabase.from("timer_sessions").select("duration_seconds").eq("task_id",taskId);
+      if(error){
+        console.error("Failed to fetch task time:",error.message);
+        return;
+      }
+
+      const total = data.reduce((acc,session) => acc + session.duration_seconds,0);
+      setTotalTaskSeconds(total);
+    }
+
   useEffect(() =>{
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     if(isRunning && secondsLeft > 0){
       timer = setTimeout(() => {
         setSecondsLeft((prev) => prev -1);
-      }, 1000);
+      }, 1);
     }
-    else if(secondsLeft === 0){
+    else if(secondsLeft === 0 && isRunning){
       setIsRunning(false);
 
       async function sendCompletedSecondsToDatabase(taskId: string, secondsLeft: number){
@@ -87,18 +101,24 @@ function RouteComponent() {
           console.error("Failed to log session:",error.message);
         } else {
           console.log("Session recorded successfully:",data);
+          fetchTotalTimeForTask(taskId)
         }
       }
 
-      sendCompletedSecondsToDatabase("288abb51-e5aa-4870-8918-2f51f56b398a",selectedMinutes[0]*60)
+      sendCompletedSecondsToDatabase(`${selectedTaskId}`,selectedMinutes[0]*60)
     }
     return () => {
       if(timer) clearTimeout(timer);
     }
-
-
-
   }, [isRunning,secondsLeft,selectedMinutes])
+
+  useEffect(()=> {
+    if(selectedTaskId) {
+      fetchTotalTimeForTask(selectedTaskId);
+    }else{
+      setTotalTaskSeconds(0);
+    }
+  },[selectedTaskId])
 
   const handleSliderChange = (newValues: readonly number[] | number) => {
     if(!isRunning){
@@ -112,6 +132,16 @@ function RouteComponent() {
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  const formatDuration = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds%3600)/60);
+
+    if(hours>0){
+      return `${hours}h ${minutes}m`
+    }
+    return `${minutes}m`
   }
 
   const toggleTimer = () => {
@@ -150,10 +180,10 @@ function RouteComponent() {
                 <CardContent>
                   <div className="flex  gap-64 whitespace-nowrap">
                     <div>
-                      <h6>{isRunning? "baridoro" : "select a task"}</h6>
-                      <p>{isRunning?"Project: thridspace": "no project selected"}</p>
+                      <h6>{selectedTask? selectedTask.taskName : "Select a task to track time"}</h6>
+                      <p>{selectedTask? `Project: ${selectedTask.projectName}` : "No project selected"}</p>
                     </div>
-                    <p className="self-end">{isRunning?"Time:1h 30m": "0h 0m"}</p>
+                    <p className="self-end">{selectedTask?`Time: ${formatDuration(totalTaskSeconds)}`: "0h 0m"}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -210,12 +240,14 @@ function RouteComponent() {
                               index={taskIndex}
                               projectId={project.id} 
                               dragDisabled={false} 
+                              onClick={() => {setSelectedTask({ taskName: task.name, projectName: project.name }); setSelectedTaskId(task.id)}}
                               toggleTask={function (projectId: string, taskId: string): void {
                                 throw new Error('Function not implemented.');
                               }} 
                               deleteTask={function (projectId: string, taskId: string): void {
                                 throw new Error('Function not implemented.');
-                              }}/>
+                              }}
+                              />
                           ))}
                           { showTaskForm === index ? 
                             <TaskForm

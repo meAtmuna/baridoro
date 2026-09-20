@@ -298,6 +298,7 @@ export function TaskCard({
   dragDisabled,
   toggleTask,
   deleteTask,
+  onClick,
 }: {
   task: Task
   index: number
@@ -305,6 +306,7 @@ export function TaskCard({
   dragDisabled: boolean
   toggleTask: (projectId: string, taskId: string) => void
   deleteTask: (projectId: string, taskId: string) => void
+  onClick: () => void
 }) {
   const {ref} = useSortable({
     id: task.id,
@@ -324,6 +326,7 @@ export function TaskCard({
       ref={ref}
       data-task-id={task.id}
       data-project-id={projectId}
+      onClick={onClick}
     >
       <Card className='w-80 !shadow-none border-2  w-full border-border !p-0 hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:!shadow-shadow cursor-pointer'>
         <CardContent className='p-3'>
