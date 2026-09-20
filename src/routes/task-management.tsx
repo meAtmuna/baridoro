@@ -1,18 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect, useRef } from 'react'
-import { Check, MoreVertical, X, Palette, Pencil, Trash2, Search, CalendarDays } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { Check, MoreVertical, X, Palette, Pencil, Trash2, PlusIcon } from 'lucide-react'
+import { Check, MoreVertical, X, Palette, Pencil, Trash2, Search,PlusIcon } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { useTaskStore, type Project, type Task} from '@/store/task-store'
+import { useTaskStore, type Project} from '@/store/task-store'
 import { DragDropProvider} from '@dnd-kit/react'
 import { useSortable } from '@dnd-kit/react/sortable'
-import { useTaskStore } from '@/store/task-store'
-import { DragDropProvider, useDroppable} from '@dnd-kit/react'
 import { TaskCard, TaskForm } from '@/components/task'
 
 export const Route = createFileRoute('/task-management')({
@@ -22,232 +18,6 @@ export const Route = createFileRoute('/task-management')({
 const projectSchema = z.object({
   projectName: z.string().trim().min(1, 'Project name is required'),
 })
-
-const taskSchema = z.object({
-  taskName: z.string().trim().min(1, 'Task name is required'),
-  description: z.string().trim(),
-  date: z.string(),
-})
-
-const formatDate = (date: string) => 
-  new Date(date + 'T00:00:00').toLocaleDateString('en-GB',{
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-
-function TaskForm({
-  onCreate,
-  onCancel,
-} : {
-  onCreate: (task: {name: string; description: string; date: string }) => void
-  onCancel: () => void
-}) {
-  const taskForm = useForm({
-    defaultValues: {
-      taskName: '',
-      description: '',
-      date: '',
-    },
-    validators: {
-      onSubmit: taskSchema,
-    },
-    onSubmit: ({value}) => {
-      onCreate({
-        name: value.taskName.trim(),
-        description: value.description.trim(),
-        date: value.date,
-      })
-
-      taskForm.reset()
-    },
-  })
-  
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        taskForm.handleSubmit()
-        }}
-      className='mt-4 space-y-2 w-64'
-    >
-      <taskForm.Field
-        name='taskName'
-        children={(field) => {
-          const isInvalid = field.state.meta.isTouched && field.state.meta.errors.length > 0
-          
-          return (
-            <Field data-invalid={isInvalid}>
-              <FieldLabel htmlFor={field.name}>
-                Task Name
-              </FieldLabel>
-              <Input
-                id={field.name}
-                name={field.name}
-                onBlur={field.handleBlur}
-                aria-invalid={isInvalid}
-                placeholder='Task name'
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-              />
-              {isInvalid && (
-                <FieldError errors={field.state.meta.errors} />
-              )}
-            </Field>
-          )
-        }}
-      />
-
-      <taskForm.Field
-        name='description'
-        children={(field) => (
-          <Field>
-            <FieldLabel htmlFor={field.name}>
-              Description
-            </FieldLabel>
-            <Textarea
-              id={field.name}
-              name={field.name}
-              onBlur={field.handleBlur}
-              placeholder='Description'
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          </Field>
-        )}
-      />
-
-      <taskForm.Field
-        name='date'
-        children={(field) => (
-          <Field>
-            <FieldLabel htmlFor={field.name}>
-              Date
-            </FieldLabel>
-            <Input
-              id={field.name}
-              name={field.name}
-              type='date'
-              onBlur={field.handleBlur}
-              value={field.state.value}
-              onChange={(e) => field.handleChange(e.target.value)}
-            />
-          </Field>
-        )}
-      />
-
-      <div className='flex items-center gap-2 justify-end'>
-        <Button
-          size='icon'
-          variant='neutral'
-          type='button'
-          onClick={onCancel}
-        >
-          <X />
-        </Button>
-
-        <taskForm.Field
-          name='taskName'
-          children={(field) => 
-            field.state.value.trim() && (
-              <Button
-                size='icon'
-                type='submit'
-              >
-                <Check />
-              </Button>
-            )
-          }
-        />
-      </div>
-    </form>
-  )
-}
-
-function TaskCard({
-  task,
-  index,
-  projectId,
-  dragDisabled,
-  toggleTask,
-  deleteTask,
-}: {
-  task: Task
-  index: number
-  projectId: string
-  dragDisabled: boolean
-  toggleTask: (projectId: string, taskId: string) => void
-  deleteTask: (projectId: string, taskId: string) => void
-}) {
-  const {ref} = useSortable({
-    id: task.id,
-    index,
-    type: 'task',
-    accept: 'task',
-    group: projectId,
-    disabled: dragDisabled,
-    data: {
-      type: 'task',
-      projectId,
-    }
-  }) 
-
-  return (
-    <div 
-      ref={ref}
-      data-task-id={task.id}
-      data-project-id={projectId}
-    >
-      <Card className='w-64'>
-        <CardContent className='p-3'>
-          <div className='flex items-start justify-between gap-2'>
-            <div className='min-w-0'>
-              <p className={`font-bold text-sm break-words ${task.completed ? 'line-through opacity-60' : ''}`}>
-                {task.name}
-              </p>
-
-              {task.description && (
-                <p className={`text-xs mt-1 break-words ${task.completed ? 'line-through opacity-60' : ''}`}>
-                  {task.description}
-                </p>
-              )}
-            </div>
-
-            <div className='flex shrink-0 items-center gap-1'>
-              <Button
-                size='icon'
-                variant='neutral'
-                className={`h-7 w-7 cursor-pointer ${task.completed ? 'bg-green-500' : ''}`}
-                onClick={() => toggleTask(projectId, task.id)}
-                title='Complete'
-              >
-                <Check className='h-4 w-4' />
-              </Button>
-
-              <Button
-                size='icon'
-                variant='neutral'
-                className='h-7 w-7 cursor-pointer'
-                onClick={() => deleteTask(projectId, task.id)}
-                title='Delete'
-              >
-                <Trash2 className='h-4 w-4 text-red-500' />
-              </Button>
-            </div>
-          </div>
-
-          {task.date && (
-            <p className='mt-2 flex items-center gap-1 text-xs text-muted-foreground'>
-              <CalendarDays className='h-3 w-3' />
-              {formatDate(task.date)}
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
 
 function ProjectCard({
   project,
@@ -338,20 +108,8 @@ function ProjectCard({
       ref={ref}
       className={hideProject ? 'hidden' : 'w-auto shrink-0'}
     >
-      <div className='flex items-center justify-between'>
-        <div ref={handleRef} className='flex items-center flex-1 cursor-grab gap-3'>
-            <span 
-              className='h-3 w-3 rounded-full'
-              style={{backgroundColor: project.color}}
-            />
-            <h1 className='font-bold text-xl'>
-              {project.name}
-            </h1>
-            <span className='rounded-full bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400'>
-              {project.tasks.length}
-            </span>
       <div className={'flex items-center justify-between min-w-[300px]'}>
-        <div className='flex items-center gap-3 flex-1 min-w-0'>
+        <div ref={handleRef} className='flex items-center flex-1 cursor-grab gap-3 min-w-0'>
           <span 
             className='h-3 w-3 rounded-full'
             style={{backgroundColor: project.color}}
@@ -415,23 +173,6 @@ function ProjectCard({
               deleteTask={deleteTask}
             />
           ))}
-
-          {showTaskInput !== index ? (
-            <button
-            className='mt-4'
-            onClick={() => setShowTaskInput(index)}
-            >
-              + Add New Task
-            </button>
-          ) : (
-            <TaskForm
-              onCreate={(task) => {
-                addTask(project.id, task)
-                setShowTaskInput(null)
-              }}
-              onCancel={cancelTask}
-            />
-          )}
         </div>
         {showTaskInput !== index ? (
           <Button size="sm"  className="hover:cursor-pointer w-full" onClick={() => setShowTaskInput(index)} variant="neutral">
@@ -661,10 +402,9 @@ function ProjectCard({
 function RouteComponent() {
   const [showInput, setShowInput] = useState(false)
   const [showTaskInput, setShowTaskInput] = useState<number | null>(null)
-  const { projects, addProject, addTask, reorderTasks, reorderProjects, updateProjectColor, updateProjectName, deleteProject, setProjects, toggleTask, deleteTask} = useTaskStore()
+  const { projects, addProject,fetchProjects, addTask, reorderTasks, reorderProjects, updateProjectColor, updateProjectName, deleteProject, setProjects, toggleTask, deleteTask} = useTaskStore()
   const projectBeforeDrag = useRef<Project[]>([])
   const [search, setSearch] = useState('')
-  const { projects,fetchProjects, addProject, addTask, reorderTasks, } = useTaskStore()
 
   useEffect(() => {
     fetchProjects();
