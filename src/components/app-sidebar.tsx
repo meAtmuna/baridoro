@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Book, ChartNoAxesColumn, Home, type LucideIcon } from "lucide-react"
+import { Book, ChartNoAxesColumn, Home, LogOut, type LucideIcon } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -13,6 +13,8 @@ import {
   SidebarTrigger
 } from "@/components/ui/sidebar"
 import { Link } from "@tanstack/react-router"
+import { Button } from "./ui/button"
+import { supabase } from "@/lib/supabase"
 
 interface NavItem {
   title: string
@@ -62,7 +64,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
 
       <SidebarFooter className="border-t-2 border-border p-4">
-        <p className="font-base text-xs">©</p>
+        <p className="font-base text-xs">
+          <Button variant="neutral" size={"xs"} className={"hover:cursor-pointer flex items-center gap-1 group-data-[collapsible=icon]:hidden"} onClick={() => supabase.auth.signOut()}>
+            <LogOut className="h-3 w-3" /> Sign Out
+          </Button>
+        </p>
       </SidebarFooter>
     </Sidebar>
   )

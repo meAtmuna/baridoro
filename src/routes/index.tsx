@@ -1,3 +1,4 @@
+import AuthForm from '@/components/auth-form';
 import { TaskCard, TaskForm } from '@/components/task';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,19 +40,19 @@ function RouteComponent() {
   const [selectedTask, setSelectedTask] = useState<{taskName: string; projectName: string} | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>();
   const [totalTaskSeconds, setTotalTaskSeconds] = useState<number>(0);
-    const { projects,fetchProjects, addTask, reorderTasks,toggleTask,deleteTask } = useTaskStore()
-  
-    useEffect(() => {
-      fetchProjects();
-    },[fetchProjects])
+  const { projects,fetchProjects, addTask, reorderTasks,toggleTask,deleteTask } = useTaskStore()
 
-    useEffect(() => {
-      if(isRunning){
-        document.title = `(${formatTime(secondsLeft)}) Baridoro Timer`
-      } else {
-        document.title = "Baridoro Timer";
-      }
-    },[isRunning,secondsLeft]);
+  useEffect(() => {
+    fetchProjects();
+  },[fetchProjects])
+
+  useEffect(() => {
+    if(isRunning){
+      document.title = `(${formatTime(secondsLeft)}) Baridoro Timer`
+    } else {
+      document.title = "Baridoro Timer";
+    }
+  },[isRunning,secondsLeft]);
 
   const form = useForm({
     defaultValues: {
